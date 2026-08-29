@@ -2,54 +2,240 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=http://localhost:8501">
-    <title>👑 BILLIONAIRE SCRIPT by Noeman NK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👑 BILLIONAIRE SCRIPT by Noeman NK | Institutional Technical Trading Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-dark: #090d16;
+            --card-bg: #111827;
+            --primary-accent: #6366f1;
+            --secondary-accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
         body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
         }
-        .card {
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-            padding: 40px;
-            border-radius: 16px;
-            border: 1px solid #6366f1;
+
+        .background-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            width: 100%;
+            background: rgba(17, 24, 39, 0.85);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 24px;
+            padding: 45px 35px;
             text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            max-width: 500px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
         }
-        h1 { margin: 0 0 10px 0; color: #f8fafc; font-size: 1.8rem; }
-        p { color: #a5b4fc; margin-bottom: 25px; line-height: 1.5; }
-        a.btn {
-            background: linear-gradient(90deg, #4338ca, #6366f1);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
+
+        .badge {
             display: inline-block;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #a5b4fc;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
         }
-        a.btn:hover { opacity: 0.9; }
+
+        h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        .author {
+            color: var(--secondary-accent);
+            font-weight: 700;
+        }
+
+        p.subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-bottom: 35px;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        .feature-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 18px;
+        }
+
+        .feature-card h3 {
+            font-size: 0.95rem;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-card p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .cta-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 380px;
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 16px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.6);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 380px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 1);
+        }
+
+        .footer-note {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
     </style>
 </head>
 <body>
-    <div class="card">
+    <div class="background-glow"></div>
+    <div class="container">
+        <div class="badge">🔥 High-Conviction NSE Trading Engine</div>
         <h1>👑 BILLIONAIRE SCRIPT</h1>
-        <p>Connecting to local scanner server at<br><b>http://localhost:8501</b>...</p>
-        <a href="http://localhost:8501" class="btn">🚀 Open Dashboard</a>
+        <p class="subtitle">Designed & Created by <span class="author">Noeman NK</span><br>Real-Time Multi-Threaded Elliott Wave & Price Action Scanner for NSE Top 500</p>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>🏛️ Major Indices</h3>
+                <p>1-Hour & 4-Hour Elliott Wave counts for NIFTY 50 & SENSEX with Option Strike advice.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📐 Price Action Patterns</h3>
+                <p>Flag & Pole, Cup & Handle, Double Bottom/Top, and Head & Shoulders with prior intimation.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🚀 Next-Day Movers</h3>
+                <p>High-velocity momentum triggers (+3% to +20% / -3% to -20%) with exact breakout levels.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📄 Printable PDF Dossiers</h3>
+                <p>Download comprehensive institutional trade PDF dossiers for any scan or subcategory.</p>
+            </div>
+        </div>
+
+        <div class="cta-group">
+            <!-- Priority 1: Cloud App Link (or Local App) -->
+            <a href="http://localhost:8501" id="appLink" class="btn-primary">
+                🚀 Launch Live Scanner Dashboard
+            </a>
+            <a href="https://github.com/nkyadawad-jpg/billionaire-script" target="_blank" class="btn-secondary">
+                🐙 View Source Code on GitHub
+            </a>
+        </div>
+
+        <p class="footer-note">⚠️ For educational and reference purposes only. Real-Time Tick Synchronization active.</p>
     </div>
+
     <script>
-        setTimeout(function() {
-            window.location.href = "http://localhost:8501";
-        }, 300);
+        // Check if running on GitHub Pages and redirect appropriately
+        const appLink = document.getElementById('appLink');
+        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (!isLocalHost) {
+            // Update button label for public web visitors
+            appLink.innerHTML = '🚀 Open Live Scanner (Local / Streamlit Cloud)';
+        }
     </script>
 </body>
 </html>
