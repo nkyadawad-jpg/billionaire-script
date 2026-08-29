@@ -5,4 +5,4 @@ numpy>=1.24.0
 ta>=0.11.0
 plotly>=5.18.0
 reportlab>=4.0.0
-niftystocks>=0.3.0
+niftystocks>=0.1.0
