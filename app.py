@@ -1,0 +1,1409 @@
+"""
+👑 BILLIONAIRE SCRIPT by Noeman NK
+High-Conviction NSE Trading Engine — Indices 1h/4h Elliott Waves, Next-Day 3%-20% Movers, 
+F&O Analytics, NIFTY 500 Universe, Classical Price Action Chart Patterns & PDF Exporter.
+"""
+
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import time
+import logging
+import sys
+import os
+import yfinance as yf
+
+# Add current directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from scanner import scan_stocks, get_stock_detail, get_bull_stocks, get_bear_stocks, fetch_stock_data_realtime
+from stock_universe import (
+    get_nifty50_tickers, get_nifty200_tickers, get_nifty500_tickers, 
+    get_available_universes, get_stock_info
+)
+from elliott_wave import analyze_multi_timeframe_elliott, scan_all_elliott_wave_setups
+from next_day_mover import scan_next_day_movers
+from index_elliott import scan_all_nse_indices, analyze_single_index, NSE_INDICES
+from chart_patterns import scan_all_chart_patterns, scan_chart_patterns_for_ticker
+from pdf_generator import generate_pdf_report
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# ─── Page Configuration ───────────────────────────────────────────────────────
+
+st.set_page_config(
+    page_title="👑 BILLIONAIRE SCRIPT by Noeman NK",
+    page_icon="👑",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ─── Custom CSS Styling ───────────────────────────────────────────────────────
+
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(90deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+        padding: 22px;
+        border-radius: 16px;
+        border: 1px solid #6366f1;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .main-title {
+        font-size: 2.3rem;
+        font-weight: 800;
+        color: #F8FAFC;
+        letter-spacing: 1px;
+        margin: 0;
+    }
+    .sub-title {
+        font-size: 1.02rem;
+        color: #A5B4FC;
+        margin-top: 6px;
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        padding: 16px;
+        border-radius: 12px;
+        text-align: center;
+        border: 1px solid #334155;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin: 0;
+    }
+    .metric-label {
+        font-size: 0.85rem;
+        opacity: 0.85;
+        margin-top: 4px;
+        font-weight: 600;
+    }
+    .index-card {
+        background: linear-gradient(135deg, #1e1b4b 0%, #172554 100%);
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #3b82f6;
+        margin-bottom: 12px;
+    }
+    .pattern-card {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #10b981;
+        margin-bottom: 14px;
+    }
+    .strong-bull { color: #22C55E; }
+    .moderate-bull { color: #86EFAC; }
+    .neutral { color: #94A3B8; }
+    .moderate-bear { color: #FCA5A5; }
+    .strong-bear { color: #EF4444; }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+with st.sidebar:
+    st.markdown("### 👑 **BILLIONAIRE SCRIPT**")
+    st.caption("Designed & Created by **Noeman NK**")
+    st.markdown("---")
+    
+    # Mode selector
+    mode = st.radio(
+        "🕐 **Trading Mode**",
+        options=["Daily", "Positional"],
+        help="**Daily**: Intraday momentum & quick breakout swings (3-month lookback)\n\n**Positional**: Multi-week positional swing trends (1-year lookback)"
+    )
+    mode_key = mode.lower()
+    
+    st.markdown("")
+    
+    # Universe selector
+    universes = get_available_universes()
+    universe_name = st.selectbox(
+        "🌐 **Stock Universe**",
+        options=list(universes.keys()),
+        help="⚡ Top 50 F&O: Fast scan\n📊 Full 200 F&O Universe: Complete F&O basket\n🌐 Full 500 Universe: Entire broad market"
+    )
+    universe_key = universes[universe_name]
+    
+    st.markdown("")
+    
+    # Run Scan button
+    run_scan = st.button("🚀 **Run Stock Scan**", use_container_width=True, type="primary")
+    
+    st.markdown("---")
+    
+    # Last scan info
+    if 'last_scan_time' in st.session_state:
+        st.caption(f"🕐 Last scan: {st.session_state['last_scan_time']}")
+        st.caption(f"📊 Mode: {st.session_state.get('last_scan_mode', 'N/A')}")
+        st.caption(f"🌐 Universe: {st.session_state.get('last_scan_universe', 'N/A')}")
+        st.caption(f"📈 Total Stocks Scanned: {len(st.session_state.get('scan_results', []))}")
+        
+        # Sidebar PDF download for current scan
+        if not st.session_state.get('scan_results', pd.DataFrame()).empty:
+            pdf_bytes = generate_pdf_report(
+                st.session_state['scan_results'],
+                title=f"Full Market Scan ({st.session_state.get('last_scan_universe')})",
+                subtitle=f"Mode: {st.session_state.get('last_scan_mode')}",
+                mode=st.session_state.get('last_scan_mode', 'Daily'),
+                universe=st.session_state.get('last_scan_universe', 'NSE')
+            )
+            st.download_button(
+                label="📄 **Download Full Scan PDF**",
+                data=pdf_bytes,
+                file_name=f"Billionaire_Script_Scan_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+    else:
+        st.caption("Ready to scan.")
+    
+    st.markdown("---")
+    st.markdown("### 🏛️ Major Indices Monitored")
+    st.caption("NIFTY 50 • SENSEX")
+    
+    st.markdown("---")
+    st.caption("⚠️ For educational and reference purposes only.")
+
+
+# ─── Helper Functions ─────────────────────────────────────────────────────────
+
+def render_metric_card(label: str, value: int, css_class: str):
+    """Render a styled metric card."""
+    st.markdown(f"""
+    <div class="metric-card">
+        <p class="metric-value {css_class}">{value}</p>
+        <p class="metric-label">{label}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def style_signal(val):
+    """Apply color styling to Signal column."""
+    color_map = {
+        'Strong Bull': '#22C55E',
+        'Moderate Bull': '#86EFAC',
+        'Neutral': '#94A3B8',
+        'Moderate Bear': '#FCA5A5',
+        'Strong Bear': '#EF4444'
+    }
+    color = color_map.get(val, '#94A3B8')
+    return f'color: {color}; font-weight: bold'
+
+
+def style_score(val):
+    """Apply color styling based on score value."""
+    try:
+        v = float(val)
+        if v >= 5:
+            return 'color: #22C55E; font-weight: bold'
+        elif v >= 3:
+            return 'color: #86EFAC; font-weight: bold'
+        elif v <= -5:
+            return 'color: #EF4444; font-weight: bold'
+        elif v <= -3:
+            return 'color: #FCA5A5; font-weight: bold'
+        else:
+            return 'color: #94A3B8'
+    except (ValueError, TypeError):
+        return ''
+
+
+def style_action(val):
+    """Color action column."""
+    s = str(val)
+    if 'BUY' in s:
+        return 'color: #22C55E; font-weight: bold;'
+    elif 'SELL' in s:
+        return 'color: #EF4444; font-weight: bold;'
+    return 'color: #94A3B8;'
+
+
+def style_change(val):
+    """Color positive changes green, negative red."""
+    try:
+        v = float(val)
+        if v > 0:
+            return 'color: #22C55E'
+        elif v < 0:
+            return 'color: #EF4444'
+        return 'color: #94A3B8'
+    except (ValueError, TypeError):
+        return ''
+
+
+def format_results_table(df: pd.DataFrame) -> pd.DataFrame:
+    """Format the results DataFrame for display with RR and Time Cycle."""
+    display_df = df.copy()
+    
+    display_cols = ['Ticker', 'Name', 'Close', 'Change%', 'Action', 'Entry', 
+                    'Stop_Loss', 'Target_1', 'Target_2', 'RR_Ratio', 'Time_Cycle',
+                    'RSI', 'ADX', 'Composite_Score', 'Signal']
+    
+    available_cols = [c for c in display_cols if c in display_df.columns]
+    display_df = display_df[available_cols]
+    
+    rename_map = {
+        'Change%': 'Chg%',
+        'Stop_Loss': 'SL',
+        'Target_1': 'T1',
+        'Target_2': 'T2',
+        'RR_Ratio': 'R:R',
+        'Time_Cycle': 'Time to Target',
+        'Composite_Score': 'Score'
+    }
+    display_df = display_df.rename(columns={k: v for k, v in rename_map.items() if k in display_df.columns})
+    return display_df
+
+
+def create_elliott_wave_chart(df: pd.DataFrame, pivots: list, setup_info: dict, title: str = "Elliott Wave Chart"):
+    """Create an interactive Elliott Wave chart with exact start points, wave pivots, and heading vectors."""
+    if df.empty:
+        st.warning("No data available to plot chart.")
+        return
+        
+    fig = make_subplots(
+        rows=3, cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.04,
+        row_heights=[0.60, 0.20, 0.20],
+        subplot_titles=(
+            f'🌊 {title}',
+            'RSI (14) Momentum',
+            'MACD (12, 26, 9)'
+        )
+    )
+    
+    # Candlestick
+    fig.add_trace(go.Candlestick(
+        x=df.index, open=df['Open'], high=df['High'],
+        low=df['Low'], close=df['Close'],
+        name='Price', increasing_line_color='#22C55E',
+        decreasing_line_color='#EF4444'
+    ), row=1, col=1)
+    
+    # EMAs
+    if 'EMA_5' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['EMA_5'], name='EMA 5',
+                                  line=dict(color='#FBBF24', width=1)), row=1, col=1)
+    if 'EMA_13' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['EMA_13'], name='EMA 13',
+                                  line=dict(color='#60A5FA', width=1)), row=1, col=1)
+    if 'EMA_26' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['EMA_26'], name='EMA 26',
+                                  line=dict(color='#F472B6', width=1)), row=1, col=1)
+                                  
+    # Wave Structure Line & Annotations
+    if pivots and len(pivots) >= 2:
+        pivot_dates = [p['date'] for p in pivots]
+        pivot_prices = [p['price'] for p in pivots]
+        
+        wave_labels = []
+        is_corrective = "C" in setup_info.get('setup_type', '')
+        for i, p in enumerate(pivots):
+            if is_corrective:
+                lbl = ['Origin', '(A)', '(B)', '(C)'][min(i, 3)]
+            else:
+                lbl = f"({i})" if i <= 5 else f"P{i}"
+            wave_labels.append(f"{lbl}: ₹{p['price']:.1f}")
+            
+        fig.add_trace(go.Scatter(
+            x=pivot_dates, y=pivot_prices,
+            mode='lines+markers+text',
+            name='Elliott Wave Structure',
+            line=dict(color='#38BDF8', width=3, dash='solid'),
+            marker=dict(size=9, color='#38BDF8', symbol='diamond'),
+            text=wave_labels,
+            textposition="top center",
+            textfont=dict(size=11, color='#F8FAFC')
+        ), row=1, col=1)
+        
+    # Invalidation Level (SL) line
+    inv = setup_info.get('invalidation_price')
+    if inv:
+        fig.add_hline(y=inv, line_dash="dash", line_color="#EF4444", 
+                      annotation_text=f"Invalidation SL: ₹{inv:.2f}", annotation_position="bottom right", row=1, col=1)
+                      
+    # Target Lines & Heading Projection
+    t1 = setup_info.get('target_1')
+    t2 = setup_info.get('target_2')
+    if t1:
+        fig.add_hline(y=t1, line_dash="dash", line_color="#22C55E", 
+                      annotation_text=f"Wave Target 1 (1.618 Fib): ₹{t1:.2f}", annotation_position="top right", row=1, col=1)
+    if t2:
+        fig.add_hline(y=t2, line_dash="dot", line_color="#38BDF8", 
+                      annotation_text=f"Wave Target 2 (2.0 Fib): ₹{t2:.2f}", annotation_position="top right", row=1, col=1)
+        
+    # Heading Destination Banner
+    heading = setup_info.get('heading_destination')
+    if heading:
+        fig.add_annotation(
+            xref="paper", yref="paper",
+            x=0.02, y=0.96,
+            text=f"<b>{heading}</b>",
+            showarrow=False,
+            bgcolor="rgba(15, 23, 42, 0.85)",
+            bordercolor="#38BDF8",
+            borderwidth=1,
+            font=dict(color="#38BDF8", size=12)
+        )
+        
+    # RSI
+    if 'RSI' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], name='RSI',
+                                  line=dict(color='#A78BFA', width=1.5)), row=2, col=1)
+        fig.add_hline(y=70, line_dash="dash", line_color="rgba(239,68,68,0.5)", row=2, col=1)
+        fig.add_hline(y=30, line_dash="dash", line_color="rgba(34,197,94,0.5)", row=2, col=1)
+        fig.add_hline(y=50, line_dash="dot", line_color="rgba(156,163,175,0.3)", row=2, col=1)
+        
+    # MACD
+    if 'MACD' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['MACD'], name='MACD',
+                                  line=dict(color='#60A5FA', width=1.5)), row=3, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=df['MACD_Signal'], name='Signal',
+                                  line=dict(color='#F97316', width=1.5)), row=3, col=1)
+        colors = ['#22C55E' if v >= 0 else '#EF4444' for v in df['MACD_Hist'].fillna(0)]
+        fig.add_trace(go.Bar(x=df.index, y=df['MACD_Hist'], name='Histogram',
+                              marker_color=colors, opacity=0.6), row=3, col=1)
+                              
+    fig.update_layout(
+        height=850,
+        template='plotly_dark',
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        xaxis_rangeslider_visible=False,
+        margin=dict(l=50, r=30, t=60, b=30)
+    )
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.05)')
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def create_chart_pattern_chart(df: pd.DataFrame, pattern_data: dict, title: str = "Price Action Chart Pattern"):
+    """Render interactive chart for price action patterns with breakout and invalidation triggers."""
+    if df.empty:
+        st.warning("No data available.")
+        return
+        
+    fig = make_subplots(
+        rows=2, cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.05,
+        row_heights=[0.75, 0.25],
+        subplot_titles=(f"📐 {title}", "RSI (14) Momentum")
+    )
+    
+    # Candlestick
+    fig.add_trace(go.Candlestick(
+        x=df.index, open=df['Open'], high=df['High'],
+        low=df['Low'], close=df['Close'],
+        name='Price', increasing_line_color='#22C55E',
+        decreasing_line_color='#EF4444'
+    ), row=1, col=1)
+    
+    # EMAs
+    if 'EMA_5' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['EMA_5'], name='EMA 5', line=dict(color='#FBBF24', width=1)), row=1, col=1)
+    if 'EMA_13' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['EMA_13'], name='EMA 13', line=dict(color='#60A5FA', width=1)), row=1, col=1)
+    if 'EMA_26' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['EMA_26'], name='EMA 26', line=dict(color='#F472B6', width=1)), row=1, col=1)
+        
+    # Trigger Entry Line
+    entry = pattern_data.get('Trigger_Entry')
+    if entry:
+        fig.add_hline(y=entry, line_dash="dash", line_color="#38BDF8", 
+                      annotation_text=f"Breakout Trigger: ₹{entry:.2f}", annotation_position="top right", row=1, col=1)
+                      
+    # Stop Loss Line
+    sl = pattern_data.get('Stop_Loss')
+    if sl:
+        fig.add_hline(y=sl, line_dash="dash", line_color="#EF4444", 
+                      annotation_text=f"Stop Loss: ₹{sl:.2f}", annotation_position="bottom right", row=1, col=1)
+                      
+    # Target 1 Line
+    t1 = pattern_data.get('Target_1')
+    if t1:
+        fig.add_hline(y=t1, line_dash="dot", line_color="#22C55E", 
+                      annotation_text=f"Target 1: ₹{t1:.2f}", annotation_position="top right", row=1, col=1)
+                      
+    # Target 2 Line
+    t2 = pattern_data.get('Target_2')
+    if t2:
+        fig.add_hline(y=t2, line_dash="dot", line_color="#10B981", 
+                      annotation_text=f"Target 2: ₹{t2:.2f}", annotation_position="top right", row=1, col=1)
+                      
+    # RSI
+    if 'RSI' in df.columns:
+        fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], name='RSI', line=dict(color='#A78BFA', width=1.5)), row=2, col=1)
+        fig.add_hline(y=70, line_dash="dash", line_color="rgba(239,68,68,0.5)", row=2, col=1)
+        fig.add_hline(y=30, line_dash="dash", line_color="rgba(34,197,94,0.5)", row=2, col=1)
+        
+    fig.update_layout(
+        height=750,
+        template='plotly_dark',
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        xaxis_rangeslider_visible=False,
+        margin=dict(l=50, r=30, t=60, b=30)
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+# ─── Execute Scan Function ────────────────────────────────────────────────────
+
+def execute_stock_scan(u_key: str, u_name: str, m_key: str, m_name: str):
+    """Orchestrate stock scan across selected universe (Full 50, 200 F&O, or 500 Universe)."""
+    if u_key == 'nifty50':
+        tickers = get_nifty50_tickers()
+    elif u_key == 'nifty500':
+        tickers = get_nifty500_tickers() # Full 500 Stocks
+    else:
+        tickers = get_nifty200_tickers() # Full 200 F&O Stocks
+        
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    def update_progress(current, total, name):
+        progress_bar.progress(current / total)
+        status_text.text(f"🚀 Scanning {current}/{total} Stocks: {name}")
+    
+    with st.spinner(f"Scanning ALL {len(tickers)} stocks in {u_name} ({m_name} mode)..."):
+        start_t = time.time()
+        results_df = scan_stocks(tickers, mode=m_key, progress_callback=update_progress)
+        elapsed = time.time() - start_t
+        
+    progress_bar.empty()
+    status_text.empty()
+    
+    st.session_state['scan_results'] = results_df
+    st.session_state['last_scan_time'] = time.strftime('%Y-%m-%d %H:%M:%S')
+    st.session_state['last_scan_mode'] = m_name
+    st.session_state['last_scan_universe'] = u_name
+    st.success(f"✅ Scan Complete! Scored **{len(results_df)}** stocks in **{elapsed:.1f}s**")
+    return results_df
+
+
+# ─── Trigger Sidebar Scan or Auto-Load ─────────────────────────────────────────
+
+if run_scan:
+    execute_stock_scan(universe_key, universe_name, mode_key, mode)
+elif 'scan_results' not in st.session_state:
+    # Auto-load initial universe on launch
+    execute_stock_scan('nifty50', '⚡ Top 50 F&O Stocks (NIFTY 50)', 'daily', 'Daily')
+
+
+# ─── Main Header ──────────────────────────────────────────────────────────────
+
+st.markdown("""
+<div class="main-header">
+    <p class="main-title">👑 BILLIONAIRE SCRIPT by Noeman NK</p>
+    <p class="sub-title">⚡ High-Conviction NSE Engine — Indices 1h/4h Elliott Waves, Next-Day 3%-20% Movers, Price Action Patterns, F&O & NIFTY 500</p>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─── Primary Tabs ─────────────────────────────────────────────────────────────
+
+tab_indices, tab_patterns, tab_movers, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
+    "🏛️ NSE Major Indices (NIFTY 50 & SENSEX)",
+    "📐 Institutional Chart Patterns (Pre-Breakouts)",
+    "🚀 Next-Day Movers (+3% to +20% / -3% to -20%)",
+    "🎯 F&O Trade Setups (R:R & Time)",
+    "🌊 Elliott Wave (Weekly + Daily)",
+    "🐂 Bull Stocks (with R:R)",
+    "🐻 Bear Stocks (with R:R)",
+    "📋 All Stocks Universe (Top 500)",
+    "🔍 Search Any Stock & Custom Wave"
+])
+
+
+# ─── TAB 1: NSE MAJOR INDICES (NIFTY 50 & SENSEX ONLY) ───────────────────────
+
+with tab_indices:
+    st.markdown("### 🏛️ NSE Major Indices: NIFTY 50 & SENSEX — 1h & 4h Elliott Wave & Option Strategy")
+    st.markdown("""
+    Institutional multi-timeframe wave counts $(1-Hour \text{ and } 4-Hour)$ with exact **Wall Street Option Buying Strike Recommendations (CE / PE)** and **Cash ETF** alternatives.
+    """)
+    
+    col_idx_btn1, col_idx_btn2, col_idx_pdf = st.columns([2, 1, 1])
+    with col_idx_btn2:
+        run_indices_scan = st.button("🏛️ **Re-Scan Nifty & Sensex**", use_container_width=True)
+    with col_idx_pdf:
+        if 'indices_data' in st.session_state and st.session_state['indices_data']:
+            # Format indices into exportable DataFrame
+            idx_export_list = []
+            for idx_obj in st.session_state['indices_data']:
+                idx_export_list.append({
+                    'Ticker': idx_obj['symbol'],
+                    'Name': idx_obj['name'],
+                    'Close': idx_obj['current_price'],
+                    'Change%': idx_obj['change_pct'],
+                    'Signal': 'BULLISH' if idx_obj['change_pct'] >= 0 else 'BEARISH',
+                    'Timeframe': '1-Hour & 4-Hour Multi-Timeframe',
+                    'Wave_Stage': f"1h: {idx_obj['ew_1h'].get('wave_phase')} | 4h: {idx_obj['ew_4h'].get('wave_phase')}",
+                    'Option_Action': idx_obj['option_advice_1h']['option_strategy'],
+                    'Option_Expiry': 'Weekly / Monthly Expiry',
+                    'Option_Target_ROI': idx_obj['option_advice_4h']['expected_premium_move'],
+                    'Option_SL': idx_obj['option_advice_1h']['option_sl'],
+                    'Target_1': idx_obj['ew_1h'].get('target_1', 0.0),
+                    'Target_2': idx_obj['ew_4h'].get('target_1', 0.0),
+                    'Rationale': f"1h Heading: {idx_obj['heading_1h']} | 4h Heading: {idx_obj['heading_4h']}"
+                })
+            pdf_idx_bytes = generate_pdf_report(
+                pd.DataFrame(idx_export_list),
+                title="NSE Major Indices Elliott Wave Analysis",
+                subtitle="NIFTY 50 & SENSEX Institutional Playbook",
+                mode="1h & 4h Multi-Timeframe",
+                universe="Premier Indian Indices"
+            )
+            st.download_button(
+                label="📄 **Download Indices PDF**",
+                data=pdf_idx_bytes,
+                file_name=f"Major_Indices_Analysis_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        
+    if run_indices_scan or 'indices_data' not in st.session_state:
+        with st.spinner("Fetching live tick quotes and 1-Hour / 4-Hour wave structures for NIFTY 50 & SENSEX..."):
+            idx_results = scan_all_nse_indices()
+            st.session_state['indices_data'] = idx_results
+    else:
+        idx_results = st.session_state.get('indices_data', [])
+        
+    if idx_results:
+        # Display 2 Premier Index Cards (NIFTY 50 and SENSEX)
+        cols = st.columns(2)
+        for j, idx in enumerate(idx_results[:2]):
+            with cols[j]:
+                st.markdown(f"""
+                <div class="index-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:1.3rem; font-weight:800; color:#F8FAFC;">🏛️ {idx['name']}</span>
+                        <span style="font-size:1.25rem; font-weight:800; color:{'#22C55E' if idx['change_pct']>=0 else '#EF4444'};">
+                            ₹{idx['current_price']:,.2f} ({idx['change_pct']:+.2f}%)
+                        </span>
+                    </div>
+                    <hr style="margin: 10px 0; border-color: #334155;">
+                    <div style="font-size:0.9rem; color:#A5B4FC; margin-bottom:4px;">
+                        <b>⏱️ 1-Hour Wave:</b> {idx['ew_1h'].get('wave_phase', 'Developing')}
+                    </div>
+                    <div style="font-size:0.85rem; color:#E2E8F0; margin-bottom:6px;">
+                        {idx['heading_1h']}
+                    </div>
+                    <div style="font-size:0.85rem; color:#38BDF8; font-weight:600; margin-bottom:10px;">
+                        💡 <b>Option Trade (1h):</b> {idx['option_advice_1h']['option_strategy']} | {idx['option_advice_1h']['option_sl']}
+                    </div>
+                    <div style="font-size:0.9rem; color:#F472B6; margin-bottom:4px;">
+                        <b>⏱️ 4-Hour Wave:</b> {idx['ew_4h'].get('wave_phase', 'Developing')}
+                    </div>
+                    <div style="font-size:0.85rem; color:#E2E8F0; margin-bottom:6px;">
+                        {idx['heading_4h']}
+                    </div>
+                    <div style="font-size:0.85rem; color:#FDE047; font-weight:600;">
+                        💡 <b>Option Trade (4h):</b> {idx['option_advice_4h']['option_strategy']} | {idx['option_advice_4h']['expected_premium_move']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+        st.markdown("---")
+        st.markdown("#### 🔍 Interactive Index Wave Chart (1h vs 4h)")
+        sel_idx_name = st.selectbox("Select Index for Deep Wave Mapping:", list(NSE_INDICES.keys()))
+        col_itf1, col_itf2 = st.columns([2, 1])
+        with col_itf2:
+            sel_idx_tf = st.radio("Timeframe:", ["1-Hour Chart (Intraday / Swing)", "4-Hour Chart (Multi-Day Macro)"], horizontal=True)
+            
+        selected_idx_obj = next((item for item in idx_results if item["name"] == sel_idx_name), None)
+        if selected_idx_obj:
+            if "1-Hour" in sel_idx_tf:
+                c_df = selected_idx_obj['df_1h']
+                c_setup = selected_idx_obj['ew_1h']
+                c_title = f"{sel_idx_name} — 1-Hour Elliott Wave Chart"
+            else:
+                c_df = selected_idx_obj['df_4h']
+                c_setup = selected_idx_obj['ew_4h']
+                c_title = f"{sel_idx_name} — 4-Hour Elliott Wave Chart"
+                
+            st.markdown(f"**Live Spot Quote**: `₹{selected_idx_obj['current_price']:,.2f}` | **Wave Stage**: `{c_setup.get('wave_phase', 'Developing')}`")
+            if c_setup.get('rationale'):
+                st.caption(f"💡 **Elliott Rationale**: {c_setup.get('rationale')}")
+            create_elliott_wave_chart(c_df, c_setup.get('pivots', []), c_setup, title=c_title)
+    else:
+        st.info("Unable to fetch indices data. Please check connection.")
+
+
+# ─── TAB 2: Institutional Chart Patterns (Price Action & Pre-Breakouts) ───────
+
+with tab_patterns:
+    st.markdown("### 📐 Institutional Price Action Chart Patterns (Top 500 Universe)")
+    st.markdown("""
+    Detects classic price action classical formations with **prior intimation / early breakout warning**:
+    - 🚩 **Flag & Pole** *(Pre-Breakout Coiling / Breaking Out Just Now)*
+    - ☕ **Cup & Handle / Inverted Cup & Handle** *(Rim Accumulation & Handle Completion)*
+    - 🎯 **Double Bottom (W-Shape) / Double Top (M-Shape)** *(Value Floor / Distribution)*
+    - 👤 **Head & Shoulders / Inverse Head & Shoulders** *(Major Trend Reversals)*
+    """)
+    
+    col_pat_tf, col_pat_univ, col_pat_btn = st.columns([1.5, 1.5, 1])
+    with col_pat_tf:
+        pat_timeframe = st.selectbox(
+            "⏱️ **Chart Timeframe**",
+            ["Daily (Swing Momentum)", "1-Hour (Intraday Pre-Breakout)", "Weekly (Positional Macro)"],
+            key="pat_tf_select"
+        )
+    with col_pat_univ:
+        pat_universe = st.selectbox(
+            "🌐 **Scan Universe**",
+            ["⚡ Top 50 F&O Stocks", "📊 Full 200 F&O Universe", "🌐 Full 500 Universe"],
+            key="pat_univ_select"
+        )
+    with col_pat_btn:
+        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+        run_pattern_scan = st.button("🚀 **Scan Chart Patterns**", use_container_width=True, type="primary")
+        
+    clean_tf = "1h" if "1-Hour" in pat_timeframe else ("Weekly" if "Weekly" in pat_timeframe else "Daily")
+    
+    if run_pattern_scan or 'chart_patterns_df' not in st.session_state:
+        if "500" in pat_universe:
+            target_tickers = get_nifty500_tickers()
+        elif "200" in pat_universe:
+            target_tickers = get_nifty200_tickers()
+        else:
+            target_tickers = get_nifty50_tickers()
+            
+        prog_pat = st.progress(0)
+        status_pat = st.empty()
+        
+        def update_pat_prog(curr, tot, name):
+            prog_pat.progress(curr / tot)
+            status_pat.text(f"Scanning Chart Patterns ({curr}/{tot}): {name}")
+            
+        with st.spinner(f"Scanning {len(target_tickers)} stocks for Price Action Patterns ({clean_tf} Timeframe)..."):
+            patterns_df = scan_all_chart_patterns(target_tickers, timeframe=clean_tf, progress_callback=update_pat_prog)
+            st.session_state['chart_patterns_df'] = patterns_df
+            st.session_state['pat_last_tf'] = pat_timeframe
+            
+        prog_pat.empty()
+        status_pat.empty()
+    else:
+        patterns_df = st.session_state.get('chart_patterns_df', pd.DataFrame())
+        
+    if not patterns_df.empty:
+        col_cnt, col_pdf = st.columns([3, 1])
+        with col_cnt:
+            st.markdown(f"#### ⚡ Detected Patterns: **{len(patterns_df)} Opportunities** ({st.session_state.get('pat_last_tf', pat_timeframe)})")
+        with col_pdf:
+            pdf_pat_bytes = generate_pdf_report(
+                patterns_df,
+                title="Price Action Chart Patterns Report",
+                subtitle=f"Timeframe: {st.session_state.get('pat_last_tf', pat_timeframe)}",
+                mode=clean_tf,
+                universe=pat_universe
+            )
+            st.download_button(
+                label="📄 **Download PDF Report**",
+                data=pdf_pat_bytes,
+                file_name=f"Chart_Patterns_Report_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+        # Tabs for Pattern Categories
+        pat_tab_all, pat_tab_flag, pat_tab_cup, pat_tab_double, pat_tab_hs = st.tabs([
+            f"⚡ All Patterns ({len(patterns_df)})",
+            f"🚩 Flag & Pole ({len(patterns_df[patterns_df['Pattern'].str.contains('Flag', na=False)])})",
+            f"☕ Cup & Handle ({len(patterns_df[patterns_df['Pattern'].str.contains('Cup', na=False)])})",
+            f"🎯 Double Bottom/Top ({len(patterns_df[patterns_df['Pattern'].str.contains('Double', na=False)])})",
+            f"👤 Head & Shoulders ({len(patterns_df[patterns_df['Pattern'].str.contains('Shoulder', na=False)])})"
+        ])
+        
+        def render_pattern_table(df_p, category_name: str = "Chart Patterns"):
+            if df_p.empty:
+                st.info(f"No candidates in {category_name} currently.")
+                return
+                
+            col_t_btn1, col_t_btn2 = st.columns([3, 1])
+            with col_t_btn2:
+                pdf_sub_bytes = generate_pdf_report(
+                    df_p,
+                    title=f"Chart Patterns — {category_name}",
+                    subtitle=f"Timeframe: {st.session_state.get('pat_last_tf', pat_timeframe)}",
+                    mode=clean_tf,
+                    universe=pat_universe
+                )
+                st.download_button(
+                    label=f"📄 **Download {category_name} PDF**",
+                    data=pdf_sub_bytes,
+                    file_name=f"{category_name.replace(' ', '_')}_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    key=f"btn_pdf_pat_{category_name}_{time.time()}",
+                    use_container_width=True
+                )
+            
+            p_display_cols = [
+                'Ticker', 'Name', 'Pattern', 'Direction', 'Status', 'Current_Price', 'Change%',
+                'Trigger_Entry', 'Stop_Loss', 'Target_1', 'Target_2', 'RR_Ratio', 'Time_Cycle', 'Option_Strike', 'Conviction'
+            ]
+            available_p = [c for c in p_display_cols if c in df_p.columns]
+            
+            styled_p = df_p[available_p].style \
+                .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BUY' in str(v) else ('color: #EF4444; font-weight: bold;' if 'SELL' in str(v) else ''), subset=['Direction'] if 'Direction' in available_p else []) \
+                .map(lambda v: 'color: #FBBF24; font-weight: bold;' if 'JUST NOW' in str(v) else 'color: #38BDF8;', subset=['Status'] if 'Status' in available_p else []) \
+                .format({
+                    'Current_Price': '₹{:.2f}',
+                    'Change%': '{:+.2f}%',
+                    'Trigger_Entry': '₹{:.2f}',
+                    'Stop_Loss': '₹{:.2f}',
+                    'Target_1': '₹{:.2f}',
+                    'Target_2': '₹{:.2f}'
+                }, na_rep='—')
+                
+            st.dataframe(styled_p, use_container_width=True, height=380)
+            
+        with pat_tab_all: render_pattern_table(patterns_df, "All Chart Patterns")
+        with pat_tab_flag: render_pattern_table(patterns_df[patterns_df['Pattern'].str.contains('Flag', na=False)], "Flag & Pole Breakouts")
+        with pat_tab_cup: render_pattern_table(patterns_df[patterns_df['Pattern'].str.contains('Cup', na=False)], "Cup & Handle Formations")
+        with pat_tab_double: render_pattern_table(patterns_df[patterns_df['Pattern'].str.contains('Double', na=False)], "Double Bottom & Top Setups")
+        with pat_tab_hs: render_pattern_table(patterns_df[patterns_df['Pattern'].str.contains('Shoulder', na=False)], "Head & Shoulders Reversals")
+        
+        st.markdown("---")
+        st.markdown("#### 🔍 Interactive Price Action Pattern Visualizer & Chart")
+        pat_ticker_list = patterns_df['Ticker'].tolist()
+        sel_pat_ticker = st.selectbox("Select Pattern Stock to Inspect on Chart:", pat_ticker_list)
+        
+        if sel_pat_ticker:
+            matched_pattern = patterns_df[patterns_df['Ticker'] == sel_pat_ticker].iloc[0].to_dict()
+            
+            st.markdown(f"""
+            <div class="pattern-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:1.2rem; font-weight:800; color:#F8FAFC;">📐 {matched_pattern['Pattern']} — {matched_pattern['Ticker']} ({matched_pattern['Name']})</span>
+                    <span style="font-size:1.05rem; font-weight:700; color:#FDE047;">{matched_pattern['Status']}</span>
+                </div>
+                <hr style="margin: 8px 0; border-color: #334155;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px;">
+                    <div>
+                        <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Live Spot Price:</b> ₹{matched_pattern['Current_Price']:.2f} ({matched_pattern['Change%']:+.2f}%)</p>
+                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Breakout Entry:</b> ₹{matched_pattern['Trigger_Entry']:.2f}</p>
+                        <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Stop Loss:</b> ₹{matched_pattern['Stop_Loss']:.2f}</p>
+                    </div>
+                    <div>
+                        <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> ₹{matched_pattern['Target_1']:.2f}</p>
+                        <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Target 2 (Runner):</b> ₹{matched_pattern['Target_2']:.2f}</p>
+                        <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Risk:Reward:</b> {matched_pattern['RR_Ratio']}</p>
+                    </div>
+                    <div>
+                        <p style="color:#A5B4FC; margin:2px 0; font-size:0.85rem;"><b>Target Reach Timing:</b> {matched_pattern['Time_Cycle']}</p>
+                        <p style="color:#F472B6; margin:2px 0; font-size:0.85rem;"><b>Wall Street Option:</b> {matched_pattern['Option_Strike']}</p>
+                        <p style="color:#94A3B8; margin:2px 0; font-size:0.85rem;"><b>Conviction:</b> {matched_pattern['Conviction']}</p>
+                    </div>
+                </div>
+                <p style="color:#E2E8F0; font-size:0.85rem; margin:8px 0 0 0;">💡 <b>Pattern Rationale:</b> {matched_pattern['Rationale']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            with st.spinner(f"Loading chart for {sel_pat_ticker}..."):
+                df_chart_pat, _, _, _ = fetch_stock_data_realtime(sel_pat_ticker, period='1y')
+                if df_chart_pat is not None and not df_chart_pat.empty:
+                    create_chart_pattern_chart(df_chart_pat, matched_pattern, title=f"{sel_pat_ticker} — {matched_pattern['Pattern']} ({clean_tf})")
+    else:
+        st.info("No stocks currently meet strict pattern compression criteria in this scan. Click 'Scan Chart Patterns' to run again.")
+
+
+# ─── TAB 3: Next-Day Movers (+3% to +20% / -3% to -20%) ───────────────────────
+
+with tab_movers:
+    st.markdown("### 🚀 Next-Day High-Velocity Movers: 🟢 +3% to +20% Bull & 🔴 -3% to -20% Bear")
+    st.markdown(r"""
+    Detects stocks with highest probability of explosive momentum in the very next session:
+    - 🟢 **Bullish Breakouts**: Expected **$\ge +3.0\%$ to $+20.0\%$**
+    - 🔴 **Bearish Breakdowns**: Expected **$\le -3.0\%$ to $-20.0\%$**
+    - **Core Triggers**: NR7 Compression, Extreme Bollinger Band Squeeze, Institutional RVOL Spike & EMA Pinch.
+    """)
+    
+    col_m1, col_m2 = st.columns([3, 1])
+    with col_m2:
+        run_mover_scan = st.button("🚀 **Re-Scan Next-Day Movers**", use_container_width=True)
+        
+    if run_mover_scan or 'next_day_movers_df' not in st.session_state:
+        sample_tickers = get_nifty50_tickers()
+        with st.spinner("Scanning for NR7, Bollinger Squeezes, RVOL surges & Breakout Triggers..."):
+            movers_df = scan_next_day_movers(sample_tickers)
+            st.session_state['next_day_movers_df'] = movers_df
+    else:
+        movers_df = st.session_state.get('next_day_movers_df', pd.DataFrame())
+        
+    if not movers_df.empty:
+        col_m_cnt, col_m_pdf = st.columns([3, 1])
+        with col_m_cnt:
+            st.markdown(f"#### ⚡ Active Next-Day Movers ({len(movers_df)} Found)")
+        with col_m_pdf:
+            pdf_mover_bytes = generate_pdf_report(
+                movers_df,
+                title="Next-Day 3% to 20% Velocity Movers Master Report",
+                subtitle="Expected Move: Next 1 Session",
+                mode="Daily",
+                universe="NSE Top Stocks"
+            )
+            st.download_button(
+                label="📄 **Download All Movers PDF**",
+                data=pdf_mover_bytes,
+                file_name=f"NextDay_Movers_Master_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+        mover_tab_all, mover_tab_bull, mover_tab_bear = st.tabs([
+            f"⚡ All Movers ({len(movers_df)})",
+            f"🟢 Bullish +3% to +20% ({len(movers_df[movers_df['Type'].str.contains('BULL', na=False)])})",
+            f"🔴 Bearish -3% to -20% ({len(movers_df[movers_df['Type'].str.contains('BEAR', na=False)])})"
+        ])
+        
+        def render_mover_table(df_to_render, cat_label: str = "Movers"):
+            if df_to_render.empty:
+                st.info(f"No candidates in {cat_label} currently.")
+                return
+                
+            col_mv_btn1, col_mv_btn2 = st.columns([3, 1])
+            with col_mv_btn2:
+                pdf_sub_mover = generate_pdf_report(
+                    df_to_render,
+                    title=f"Next-Day Movers — {cat_label}",
+                    subtitle="Expected Move: Next 1 Session",
+                    mode="Daily",
+                    universe="NSE Universe"
+                )
+                st.download_button(
+                    label=f"📄 **Download {cat_label} PDF**",
+                    data=pdf_sub_mover,
+                    file_name=f"{cat_label.replace(' ', '_')}_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    key=f"btn_pdf_mover_{cat_label}_{time.time()}",
+                    use_container_width=True
+                )
+                
+            display_m = df_to_render.copy()
+            rename_cols = {
+                'Trigger_Entry': 'Trigger Entry',
+                'Stop_Loss': 'SL',
+                'Target_1_4Pct': 'T1 (Target)',
+                'Target_2_7Pct': 'T2 (Runner)',
+                'Expected_Move': 'Expected Move',
+                'Risk_Reward': 'R:R',
+                'Time_Cycle': 'Time Cycle',
+                'Setup_Pattern': 'Setup Pattern'
+            }
+            display_m = display_m.rename(columns={k: v for k, v in rename_cols.items() if k in display_m.columns})
+            
+            styled = display_m.style \
+                .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BULL' in str(v) else ('color: #EF4444; font-weight: bold;' if 'BEAR' in str(v) else ''), subset=['Direction'] if 'Direction' in display_m.columns else []) \
+                .map(lambda v: 'color: #FBBF24; font-weight: bold;', subset=['Probability'] if 'Probability' in display_m.columns else []) \
+                .format({
+                    'Current_Price': '₹{:.2f}',
+                    'Trigger Entry': '₹{:.2f}',
+                    'SL': '₹{:.2f}',
+                    'T1 (Target)': '₹{:.2f}',
+                    'T2 (Runner)': '₹{:.2f}'
+                }, na_rep='—')
+                
+            st.dataframe(styled, use_container_width=True, height=380)
+            
+        with mover_tab_all: render_mover_table(movers_df)
+        with mover_tab_bull: render_mover_table(movers_df[movers_df['Type'].str.contains('BULL', na=False)])
+        with mover_tab_bear: render_mover_table(movers_df[movers_df['Type'].str.contains('BEAR', na=False)])
+        
+        st.caption("📌 **Execution Protocol**: Enter when the stock crosses the **Trigger Entry** level with 5-min candle confirmation. Stick strictly to the Stop Loss.")
+    else:
+        st.info("💡 No stocks currently meet the extreme compression criteria. Click 'Re-Scan Next-Day Movers' to check again.")
+
+
+# ─── TAB 4: F&O Trade Setups with R:R & Time Cycle ────────────────────────────
+
+with tab_trades:
+    st.markdown(f"### 🎯 F&O Active Trade Setups with R:R & Time Cycle ({mode} Mode)")
+    results = st.session_state.get('scan_results', pd.DataFrame())
+    
+    if results.empty:
+        st.info("💡 Click **🚀 Run Stock Scan** in the sidebar to populate live F&O trade setups.")
+    else:
+        if 'Action' in results.columns:
+            actionable_df = results[results['Action'].str.contains('BUY|SELL', case=False, na=False)].copy()
+        else:
+            actionable_df = pd.DataFrame()
+            
+        if actionable_df.empty:
+            st.info("💡 No breakout triggers active at this moment (Score ≥ 3 or ≤ -3). Check the Bull / Bear tabs below.")
+        else:
+            col_t_cnt, col_t_pdf = st.columns([3, 1])
+            with col_t_cnt:
+                st.markdown(f"#### 🎯 High-Conviction Breakout Setups ({len(actionable_df)} Found)")
+            with col_t_pdf:
+                pdf_trades_bytes = generate_pdf_report(
+                    actionable_df,
+                    title="F&O High-Conviction Trade Setups Report",
+                    subtitle=f"Mode: {mode}",
+                    mode=mode,
+                    universe="NSE F&O Basket"
+                )
+                st.download_button(
+                    label="📄 **Download F&O Setups PDF**",
+                    data=pdf_trades_bytes,
+                    file_name=f"FNO_Trade_Setups_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+                
+            trade_cols = ['Ticker', 'Name', 'Action', 'Close', 'Entry', 'Stop_Loss', 'Target_1', 'Target_2', 'Risk', 'RR_Ratio', 'Time_Cycle', 'Composite_Score', 'Rationale']
+            display_trades = actionable_df[[c for c in trade_cols if c in actionable_df.columns]].copy()
+            
+            display_trades = display_trades.rename(columns={
+                'Stop_Loss': 'SL',
+                'Target_1': 'T1',
+                'Target_2': 'T2',
+                'RR_Ratio': 'R:R',
+                'Time_Cycle': 'Time to Target',
+                'Composite_Score': 'Score'
+            })
+            
+            styled_trades = display_trades.style \
+                .map(style_action, subset=['Action'] if 'Action' in display_trades.columns else []) \
+                .map(style_score, subset=['Score'] if 'Score' in display_trades.columns else []) \
+                .format({
+                    'Close': '₹{:.2f}',
+                    'Entry': '₹{:.2f}',
+                    'SL': '₹{:.2f}',
+                    'T1': '₹{:.2f}',
+                    'T2': '₹{:.2f}',
+                    'Risk': '₹{:.2f}',
+                    'Score': '{:+d}'
+                }, na_rep='—')
+            
+            st.dataframe(styled_trades, use_container_width=True, height=450)
+            st.caption("📌 **Trading Rule**: Enter on confirmation above Entry for BUY, or below Entry for SELL. Time to target is dynamically calculated via ATR velocity.")
+
+
+# ─── TAB 5: Elliott Wave (Weekly + Daily — Wall Street Trader Desk) ───────────
+
+with tab_ew:
+    st.markdown("### 🌊 Multi-Timeframe Elliott Wave Setup Engine — Wall Street Trader Desk")
+    st.markdown("""
+    Institutional grade Wave mapping across **Daily (Intraday/Swing)** and **Weekly (Positional/Macro)** timeframes.
+    Provides exact **Option Buying Strategies (Call CE / Put PE Strikes)** and **Cash Equity Trade Plans**.
+    """)
+    
+    col_ew1, col_ew2 = st.columns([3, 1])
+    with col_ew2:
+        run_ew_scan = st.button("🌊 **Re-Scan Elliott Waves**", use_container_width=True)
+        
+    if run_ew_scan or 'ew_scan_results' not in st.session_state:
+        ew_tickers = get_nifty50_tickers()
+        with st.spinner("Analyzing Wave structures, Option strike convexities & Fibonacci projections across Weekly & Daily charts..."):
+            ew_df = scan_all_elliott_wave_setups(ew_tickers)
+            st.session_state['ew_scan_results'] = ew_df
+    else:
+        ew_df = st.session_state.get('ew_scan_results', pd.DataFrame())
+        
+    if not ew_df.empty:
+        col_ew_cnt, col_ew_pdf = st.columns([3, 1])
+        with col_ew_cnt:
+            st.markdown(f"#### ⚡ Active High-Conviction Wave Setups ({len(ew_df)} Found)")
+        with col_ew_pdf:
+            pdf_ew_bytes = generate_pdf_report(
+                ew_df,
+                title="Elliott Wave Institutional Trade Report",
+                subtitle="Wall Street Options & Cash Strategy",
+                mode="Daily + Weekly",
+                universe="NSE Equities"
+            )
+            st.download_button(
+                label="📄 **Download All Waves PDF**",
+                data=pdf_ew_bytes,
+                file_name=f"Elliott_Wave_Master_{int(time.time())}.pdf",
+                mime="application/pdf",
+                key="btn_pdf_ew_master",
+                use_container_width=True
+            )
+            
+        ew_display_cols = [
+            'Ticker', 'Name', 'Timeframe', 'Wave_Stage', 'Direction', 'Conviction',
+            'Option_Action', 'Option_Expiry', 'Option_Target_ROI', 'Option_SL', 'Option_RR', 
+            'Cash_RR', 'Fib_Level', 'Target_1', 'Target_2'
+        ]
+        available_ew = [c for c in ew_display_cols if c in ew_df.columns]
+        
+        styled_ew = ew_df[available_ew].style \
+            .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BUY' in str(v) else ('color: #EF4444; font-weight: bold;' if 'SELL' in str(v) else ''), subset=['Direction'] if 'Direction' in available_ew else []) \
+            .map(lambda v: 'color: #FBBF24; font-weight: bold;', subset=['Conviction'] if 'Conviction' in available_ew else []) \
+            .map(lambda v: 'color: #38BDF8; font-weight: bold;', subset=['Option_Action'] if 'Option_Action' in available_ew else []) \
+            .format({
+                'Target_1': '₹{:.2f}',
+                'Target_2': '₹{:.2f}'
+            }, na_rep='—')
+            
+        st.dataframe(styled_ew, use_container_width=True, height=380)
+    else:
+        st.info("No active Elliott Wave triggers in this batch.")
+        
+    st.markdown("---")
+    st.markdown("#### 🔍 Wall Street Trading Desk: Deep Stock Wave Breakdown & Chart")
+    ew_ticker_options = get_nifty50_tickers()
+    col_sel1, col_sel2 = st.columns([2, 1])
+    with col_sel1:
+        sel_ew_ticker = st.selectbox("Select Stock for Institutional Breakdown:", ew_ticker_options, key="ew_chart_selector")
+    with col_sel2:
+        sel_tf = st.radio("Timeframe:", ["Daily Chart (Swing)", "Weekly Chart (Macro)"], horizontal=True, key="ew_tf_radio")
+        
+    if sel_ew_ticker:
+        with st.spinner(f"Rendering precise Elliott Wave structure for {sel_ew_ticker}..."):
+            ew_detail = analyze_multi_timeframe_elliott(sel_ew_ticker)
+            
+        if ew_detail.get('valid'):
+            if "Daily" in sel_tf:
+                chart_df = ew_detail['df_daily']
+                chart_setup = ew_detail['daily']
+                chart_title = f"{sel_ew_ticker} — Daily Elliott Wave Analysis"
+            else:
+                chart_df = ew_detail['df_weekly']
+                chart_setup = ew_detail['weekly']
+                chart_title = f"{sel_ew_ticker} — Weekly Macro Elliott Wave Analysis"
+                
+            # Create single stock dossier DataFrame for PDF export
+            single_stock_df = pd.DataFrame([{
+                'Ticker': sel_ew_ticker,
+                'Name': get_stock_info(sel_ew_ticker).get('name', sel_ew_ticker),
+                'Close': chart_setup.get('current_price', 0.0),
+                'Change%': chart_setup.get('change_pct', 0.0),
+                'Signal': chart_setup.get('direction', 'BUY'),
+                'Timeframe': chart_setup.get('timeframe_context', sel_tf),
+                'Wave_Stage': chart_setup.get('wave_phase', 'Developing'),
+                'Option_Action': f"{chart_setup.get('option_type')} {chart_setup.get('option_strike')}",
+                'Option_Expiry': chart_setup.get('option_expiry', 'Monthly Expiry'),
+                'Option_Target_ROI': chart_setup.get('option_target_roi', '+100% to +300%'),
+                'Option_SL': chart_setup.get('option_sl', '-35% SL'),
+                'Option_RR': chart_setup.get('option_rr', '1:3.5'),
+                'Trigger_Entry': chart_setup.get('current_price', 0.0),
+                'Stop_Loss': chart_setup.get('invalidation_price', 0.0),
+                'Target_1': chart_setup.get('target_1', 0.0),
+                'Target_2': chart_setup.get('target_2', 0.0),
+                'RR_Ratio': chart_setup.get('rr_ratio', '1:2.5'),
+                'Time_Cycle': chart_setup.get('time_cycle', '📅 5 - 12 Trading Days'),
+                'Conviction': chart_setup.get('conviction_score', '92%'),
+                'Rationale': chart_setup.get('how_it_happened', chart_setup.get('rationale', ''))
+            }])
+            
+            col_doss_title, col_doss_pdf = st.columns([3, 1])
+            with col_doss_pdf:
+                pdf_single_bytes = generate_pdf_report(
+                    single_stock_df,
+                    title=f"{sel_ew_ticker} Institutional Trade Dossier",
+                    subtitle="Wall Street Options & Wave Breakdown",
+                    mode=sel_tf,
+                    universe="NSE Equities"
+                )
+                st.download_button(
+                    label=f"📄 **Download {sel_ew_ticker} PDF Dossier**",
+                    data=pdf_single_bytes,
+                    file_name=f"{sel_ew_ticker.replace('.NS', '')}_Dossier_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    key=f"btn_pdf_single_{sel_ew_ticker}",
+                    use_container_width=True
+                )
+                
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 18px; border-radius: 12px; border: 1px solid #3b82f6; margin-bottom: 15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:1.2rem; font-weight:800; color:#F8FAFC;">🏦 Wall Street Trade Directive: {sel_ew_ticker}</span>
+                    <span style="font-size:1.0rem; font-weight:700; color:#FDE047;">Conviction: {chart_setup.get('conviction_score', '92%')}</span>
+                </div>
+                <hr style="margin: 8px 0; border-color: #334155;">
+                <p style="color:#A5B4FC; font-size:0.95rem; margin:0 0 8px 0;">
+                    <b>🌊 Wave Stage:</b> <code>{chart_setup.get('wave_phase', 'Developing')}</code> | <b>Timeframe:</b> <code>{chart_setup.get('timeframe_context', sel_tf)}</code>
+                </p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+                    <div style="background: rgba(30, 27, 75, 0.6); padding: 10px; border-radius: 8px; border: 1px solid #6366f1;">
+                        <h4 style="color:#38BDF8; margin:0 0 4px 0;">🎯 Option Buying Strategy (High Delta Convexity)</h4>
+                        <p style="color:#F8FAFC; margin:2px 0; font-size:0.9rem;"><b>Action:</b> <span style="color:#22C55E; font-weight:bold;">{chart_setup.get('option_type', 'BUY CALL')}</span> — <b>{chart_setup.get('option_strike', 'ATM')}</b></p>
+                        <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Expiry:</b> {chart_setup.get('option_expiry', 'Monthly Expiry')}</p>
+                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Target ROI:</b> {chart_setup.get('option_target_roi', '+100% to +300%')}</p>
+                        <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Risk Management:</b> {chart_setup.get('option_sl', '-35% SL')} | <b>R:R:</b> {chart_setup.get('option_rr', '1:3.5')}</p>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 8px; border: 1px solid #10B981;">
+                        <h4 style="color:#10B981; margin:0 0 4px 0;">💎 Cash Equity Buying Strategy (Spot / Delivery)</h4>
+                        <p style="color:#F8FAFC; margin:2px 0; font-size:0.9rem;"><b>Entry:</b> ₹{chart_setup.get('current_price', 0.0):.2f} | <b>Invalidation SL:</b> <span style="color:#EF4444;">₹{chart_setup.get('invalidation_price', 0.0):.2f}</span></p>
+                        <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1 (1.618 Fib):</b> ₹{chart_setup.get('target_1', 0.0):.2f}</p>
+                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Target 2 (2.0 Fib):</b> ₹{chart_setup.get('target_2', 0.0):.2f}</p>
+                        <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Cash Risk-Reward:</b> {chart_setup.get('rr_ratio', '1:2.5')}</p>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if chart_setup.get('how_it_happened'):
+                st.markdown("#### 📖 The Anatomy of This Wave (How It Happened)")
+                st.info(chart_setup.get('how_it_happened'))
+                
+            create_elliott_wave_chart(chart_df, chart_setup.get('pivots', []), chart_setup, title=chart_title)
+        else:
+            st.warning(f"Could not calculate Elliott Waves for {sel_ew_ticker}")
+
+
+# ─── TAB 6: Bull Stocks Tab with R:R & Time Cycle ────────────────────────────
+
+with tab_bull:
+    results = st.session_state.get('scan_results', pd.DataFrame())
+    if results.empty:
+        st.info("💡 Click **🚀 Run Stock Scan** in the sidebar to load Bullish Stocks.")
+    else:
+        bull_df = get_bull_stocks(results)
+        if bull_df.empty:
+            st.info("No bullish stocks found in this scan.")
+        else:
+            col_b_cnt, col_b_pdf = st.columns([3, 1])
+            with col_b_cnt:
+                st.markdown(f"### 🐂 Bullish Stocks with R:R & Target Duration ({len(bull_df)})")
+            with col_b_pdf:
+                pdf_bull_bytes = generate_pdf_report(
+                    bull_df,
+                    title="Bullish Stocks Institutional Report",
+                    subtitle="Ranked by Bullish Momentum",
+                    mode=mode,
+                    universe="NSE Universe"
+                )
+                st.download_button(
+                    label="📄 **Download Bull Stocks PDF**",
+                    data=pdf_bull_bytes,
+                    file_name=f"Bull_Stocks_Report_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+                
+            display_df = format_results_table(bull_df)
+            
+            styled = display_df.style \
+                .map(style_signal, subset=['Signal'] if 'Signal' in display_df.columns else []) \
+                .map(style_score, subset=['Score'] if 'Score' in display_df.columns else []) \
+                .map(style_action, subset=['Action'] if 'Action' in display_df.columns else []) \
+                .map(style_change, subset=['Chg%'] if 'Chg%' in display_df.columns else []) \
+                .format({
+                    'Close': '₹{:.2f}',
+                    'Chg%': '{:+.2f}%',
+                    'Entry': '₹{:.2f}',
+                    'SL': '₹{:.2f}',
+                    'T1': '₹{:.2f}',
+                    'T2': '₹{:.2f}',
+                    'RSI': '{:.1f}',
+                    'ADX': '{:.1f}',
+                    'Score': '{:+d}',
+                }, na_rep='—')
+            
+            st.dataframe(styled, use_container_width=True, height=500)
+
+
+# ─── TAB 7: Bear Stocks Tab with R:R & Time Cycle ────────────────────────────
+
+with tab_bear:
+    results = st.session_state.get('scan_results', pd.DataFrame())
+    if results.empty:
+        st.info("💡 Click **🚀 Run Stock Scan** in the sidebar to load Bearish Stocks.")
+    else:
+        bear_df = get_bear_stocks(results)
+        if bear_df.empty:
+            st.info("No bearish stocks found in this scan.")
+        else:
+            col_br_cnt, col_br_pdf = st.columns([3, 1])
+            with col_br_cnt:
+                st.markdown(f"### 🐻 Bearish Stocks with R:R & Target Duration ({len(bear_df)})")
+            with col_br_pdf:
+                pdf_bear_bytes = generate_pdf_report(
+                    bear_df,
+                    title="Bearish Stocks Institutional Report",
+                    subtitle="Ranked by Bearish Breakdown",
+                    mode=mode,
+                    universe="NSE Universe"
+                )
+                st.download_button(
+                    label="📄 **Download Bear Stocks PDF**",
+                    data=pdf_bear_bytes,
+                    file_name=f"Bear_Stocks_Report_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+                
+            display_df = format_results_table(bear_df)
+            
+            styled = display_df.style \
+                .map(style_signal, subset=['Signal'] if 'Signal' in display_df.columns else []) \
+                .map(style_score, subset=['Score'] if 'Score' in display_df.columns else []) \
+                .map(style_action, subset=['Action'] if 'Action' in display_df.columns else []) \
+                .map(style_change, subset=['Chg%'] if 'Chg%' in display_df.columns else []) \
+                .format({
+                    'Close': '₹{:.2f}',
+                    'Chg%': '{:+.2f}%',
+                    'Entry': '₹{:.2f}',
+                    'SL': '₹{:.2f}',
+                    'T1': '₹{:.2f}',
+                    'T2': '₹{:.2f}',
+                    'RSI': '{:.1f}',
+                    'ADX': '{:.1f}',
+                    'Score': '{:+d}',
+                }, na_rep='—')
+            
+            st.dataframe(styled, use_container_width=True, height=500)
+
+
+# ─── TAB 8: All Stocks Universe ──────────────────────────────────────────────
+
+with tab_all:
+    results = st.session_state.get('scan_results', pd.DataFrame())
+    if results.empty:
+        st.info("💡 Click **🚀 Run Stock Scan** in the sidebar to load All Stocks.")
+    else:
+        col_a_cnt, col_a_pdf = st.columns([3, 1])
+        with col_a_cnt:
+            st.markdown(f"### 📋 All Stocks Universe ({len(results)} Stocks Scanned)")
+        with col_a_pdf:
+            pdf_all_bytes = generate_pdf_report(
+                results,
+                title="All Stocks Complete Universe Report",
+                subtitle=f"Total Stocks: {len(results)}",
+                mode=mode,
+                universe=universe_name
+            )
+            st.download_button(
+                label="📄 **Download All Stocks PDF**",
+                data=pdf_all_bytes,
+                file_name=f"All_Stocks_Universe_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+        display_df = format_results_table(results)
+        
+        styled = display_df.style \
+            .map(style_signal, subset=['Signal'] if 'Signal' in display_df.columns else []) \
+            .map(style_score, subset=['Score'] if 'Score' in display_df.columns else []) \
+            .map(style_action, subset=['Action'] if 'Action' in display_df.columns else []) \
+            .map(style_change, subset=['Chg%'] if 'Chg%' in display_df.columns else []) \
+            .format({
+                'Close': '₹{:.2f}',
+                'Chg%': '{:+.2f}%',
+                'Entry': '₹{:.2f}',
+                'SL': '₹{:.2f}',
+                'T1': '₹{:.2f}',
+                'T2': '₹{:.2f}',
+                'RSI': '{:.1f}',
+                'ADX': '{:.1f}',
+                'Score': '{:+d}',
+            }, na_rep='—')
+        
+        st.dataframe(styled, use_container_width=True, height=600)
+
+
+# ─── TAB 9: Custom Stock Search & Precision Wave Plotter ─────────────────────
+
+with tab_search:
+    st.markdown("### 🔍 Search ANY NSE 500 Stock & Instant Elliott Wave Plotter")
+    st.markdown("Enter any NSE symbol (e.g. `ZOMATO`, `SUZLON`, `JIOFIN`, `IREDA`, `TATACHEM`, `RELIANCE`):")
+    
+    col_s1, col_s2, col_s3 = st.columns([2, 1, 1])
+    with col_s1:
+        custom_input = st.text_input("Enter NSE Ticker Symbol:", value="ZOMATO", placeholder="e.g. ZOMATO, SUZLON, TATASTEEL")
+    with col_s2:
+        custom_tf = st.selectbox("Chart Timeframe:", ["Daily Chart (Swing)", "Weekly Chart (Macro)", "1-Hour Chart (Intraday)"])
+    with col_s3:
+        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+        analyze_btn = st.button("🚀 **Analyze Stock**", use_container_width=True)
+        
+    if custom_input:
+        clean_ticker = custom_input.strip().upper()
+        if not clean_ticker.endswith('.NS') and not clean_ticker.startswith('^'):
+            clean_ticker += '.NS'
+            
+        with st.spinner(f"Fetching live tick data and computing Elliott Waves for {clean_ticker}..."):
+            if "1-Hour" in custom_tf:
+                raw_df = yf.download(clean_ticker, period='2mo', interval='1h', progress=False)
+                if raw_df is not None and not raw_df.empty:
+                    if isinstance(raw_df.columns, pd.MultiIndex): raw_df.columns = [c[0] for c in raw_df.columns]
+                    raw_df = raw_df.dropna(subset=['Close'])
+                    from indicators import compute_all_indicators
+                    from elliott_wave import analyze_elliott_wave
+                    raw_df = compute_all_indicators(raw_df)
+                    ew_res = analyze_elliott_wave(raw_df, timeframe='daily')
+                else:
+                    ew_res = {'valid': False}
+            else:
+                ew_mult = analyze_multi_timeframe_elliott(clean_ticker)
+                if ew_mult.get('valid'):
+                    if "Daily" in custom_tf:
+                        raw_df = ew_mult['df_daily']
+                        ew_res = ew_mult['daily']
+                    else:
+                        raw_df = ew_mult['df_weekly']
+                        ew_res = ew_mult['weekly']
+                else:
+                    ew_res = {'valid': False}
+                    
+        if ew_res and ew_res.get('wave_phase'):
+            info = get_stock_info(clean_ticker)
+            last_p = float(raw_df['Close'].iloc[-1])
+            
+            col_head_left, col_head_pdf = st.columns([3, 1])
+            with col_head_left:
+                st.markdown(f"## 📈 {clean_ticker} — {info.get('name', clean_ticker.replace('.NS',''))}")
+                st.markdown(f"**Latest Real-Time Close**: `₹{last_p:,.2f}` | **Wave Phase**: `{ew_res.get('wave_phase')}`")
+            with col_head_pdf:
+                # Generate PDF for this specific searched stock
+                searched_stock_df = pd.DataFrame([{
+                    'Ticker': clean_ticker,
+                    'Name': info.get('name', clean_ticker),
+                    'Close': last_p,
+                    'Change%': float(((last_p - raw_df['Close'].iloc[-2]) / raw_df['Close'].iloc[-2]) * 100) if len(raw_df) > 1 else 0.0,
+                    'Signal': 'BULLISH' if 'BULL' in ew_res.get('wave_phase', '').upper() else 'BEARISH',
+                    'Timeframe': custom_tf,
+                    'Wave_Stage': ew_res.get('wave_phase'),
+                    'Option_Action': f"{'BUY CALL' if 'BULL' in ew_res.get('wave_phase','').upper() else 'BUY PUT'} (ATM/OTM)",
+                    'Option_Expiry': 'Current Month Expiry',
+                    'Option_Target_ROI': '+100% to +300%',
+                    'Option_SL': '-35% SL',
+                    'Trigger_Entry': last_p,
+                    'Stop_Loss': ew_res.get('invalidation_price', 0.0),
+                    'Target_1': ew_res.get('target_1', 0.0),
+                    'Target_2': ew_res.get('target_2', 0.0),
+                    'RR_Ratio': '1:3.0',
+                    'Time_Cycle': '⚡ 1 - 5 Sessions',
+                    'Conviction': '92%',
+                    'Rationale': ew_res.get('rationale', '')
+                }])
+                pdf_search_bytes = generate_pdf_report(
+                    searched_stock_df,
+                    title=f"{clean_ticker} Technical Elliott Wave Dossier",
+                    subtitle="Wall Street Options & Wave Breakdown",
+                    mode=custom_tf,
+                    universe="NSE Custom Search"
+                )
+                st.download_button(
+                    label=f"📄 **Download {clean_ticker} PDF**",
+                    data=pdf_search_bytes,
+                    file_name=f"{clean_ticker.replace('.NS', '')}_Analysis_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    key=f"btn_pdf_search_{clean_ticker}",
+                    use_container_width=True
+                )
+                
+            if ew_res.get('heading_destination'):
+                st.markdown(f"**Wave Trajectory**: `{ew_res.get('heading_destination')}`")
+            if ew_res.get('rationale'):
+                st.caption(f"💡 **Rationale**: {ew_res.get('rationale')}")
+                
+            create_elliott_wave_chart(raw_df, ew_res.get('pivots', []), ew_res, title=f"{clean_ticker} — {custom_tf}")
+        else:
+            st.error(f"Could not load data for symbol '{clean_ticker}'. Ensure it is a valid NSE stock ticker.")

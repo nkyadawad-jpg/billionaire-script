@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output test files
+*.pdf
+test_output.pdf
+
+# Environment
+.env
+venv/
+ENV/
+env/
+
+# IDE / System
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0; url=http://localhost:8501">
+    <title>👑 BILLIONAIRE SCRIPT by Noeman NK</title>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid #6366f1;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 500px;
+        }
+        h1 { margin: 0 0 10px 0; color: #f8fafc; font-size: 1.8rem; }
+        p { color: #a5b4fc; margin-bottom: 25px; line-height: 1.5; }
+        a.btn {
+            background: linear-gradient(90deg, #4338ca, #6366f1);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        a.btn:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>👑 BILLIONAIRE SCRIPT</h1>
+        <p>Connecting to local scanner server at<br><b>http://localhost:8501</b>...</p>
+        <a href="http://localhost:8501" class="btn">🚀 Open Dashboard</a>
+    </div>
+    <script>
+        setTimeout(function() {
+            window.location.href = "http://localhost:8501";
+        }, 300);
+    </script>
+</body>
+</html>
