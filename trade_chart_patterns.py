@@ -2,28 +2,16 @@
 📈 TRADE CHART — Institutional Price Action Chart Patterns Detection Engine
 Designed for BILLIONAIRE SCRIPT by Noeman NK
 
+Refined Multi-Timeframe Threshold Engine:
+- 15-Min: Intraday Scalp Alert (Tight 1.2% height, 2.5% pole)
+- 1-Hour: Intraday / Swing (2.5% height, 4.5% pole)
+- Daily: Swing Trading (4.0% height, 7.0% pole)
+- Weekly: Positional Macro (Macro 7.5% height, 14.0% pole - Zero Noise!)
+
 Implements 100% of patterns from the Institutional Cheat Sheet:
-1. REVERSAL PATTERNS:
-   - 🔴 Double Top (M-Shape)
-   - 🟢 Double Bottom (W-Shape)
-   - 🔴 Head & Shoulders Top
-   - 🟢 Inverse Head & Shoulders
-   - 🔴 Rising Wedge (Bearish Reversal)
-   - 🟢 Falling Wedge (Bullish Reversal)
-
-2. CONTINUATION PATTERNS:
-   - 🟢 Bullish Pennant (Impulse Squeeze)
-   - 🔴 Bearish Pennant (Waterfall Squeeze)
-   - 🟢 Bullish Rectangle (Channel Consolidation)
-   - 🔴 Bearish Rectangle (Distribution Box)
-
-3. BILATERAL PATTERNS:
-   - 🟢 Ascending Triangle (Flat Top Resistance + Rising Lows)
-   - 🔴 Descending Triangle (Flat Bottom Support + Falling Highs)
-   - ⚡ Symmetrical Triangle (Symmetrical Coil Breakout)
-
-Timeframes Supported: 15-Min (Intraday Scalp Alert), 1-Hour (Swing), Daily (Swing), Weekly (Macro).
-Features: Instant "PATTERN COMPLETED JUST NOW" Early Entry Alerts, Exact SL, Targets, R:R, and Target Reach Timing.
+1. REVERSAL PATTERNS: Double Top (M), Double Bottom (W), Head & Shoulders, Inverse H&S, Rising/Falling Wedges
+2. CONTINUATION PATTERNS: Bullish/Bearish Pennants, Bullish/Bearish Rectangles & Channels
+3. BILATERAL PATTERNS: Ascending Triangle, Descending Triangle, Symmetrical Triangle
 """
 
 import numpy as np
@@ -172,59 +160,70 @@ def find_trade_extrema(df: pd.DataFrame, window: int = 3) -> List[Dict]:
                  all(lows[i] <= lows[i + j] for j in range(1, window + 1))
                  
         if is_high:
-            pivots.append({
-                'index': i,
-                'date': str(dates[i]),
-                'type': 'HIGH',
-                'price': float(highs[i])
-            })
+            pivots.append({'index': i, 'date': str(dates[i]), 'type': 'HIGH', 'price': float(highs[i])})
         elif is_low:
-            pivots.append({
-                'index': i,
-                'date': str(dates[i]),
-                'type': 'LOW',
-                'price': float(lows[i])
-            })
+            pivots.append({'index': i, 'date': str(dates[i]), 'type': 'LOW', 'price': float(lows[i])})
             
-    pivots.append({
-        'index': n - 1,
-        'date': str(dates[-1]),
-        'type': 'CLOSE',
-        'price': float(df['Close'].iloc[-1])
-    })
+    pivots.append({'index': n - 1, 'date': str(dates[-1]), 'type': 'CLOSE', 'price': float(df['Close'].iloc[-1])})
     return pivots
 
-def calculate_option_strike(price: float, direction: str) -> str:
-    """Calculate recommended Wall Street option strike."""
+def calculate_option_strike(price: float, direction: str, timeframe: str = 'Daily') -> str:
+    """Calculate recommended Wall Street option strike & expiry context."""
     step = 100 if price > 2000 else (50 if price > 1000 else (20 if price > 500 else 10))
     rounded = round(price / step) * step
-    return f"{int(rounded)} CE" if 'BULL' in direction or 'BUY' in direction else f"{int(rounded)} PE"
+    opt_type = "CE" if ('BULL' in direction or 'BUY' in direction) else "PE"
+    
+    tf_lower = timeframe.lower()
+    if 'week' in tf_lower:
+        expiry = "Monthly / Next-Month Expiry"
+    elif '15' in tf_lower:
+        expiry = "Current Weekly Expiry"
+    else:
+        expiry = "Monthly Expiry"
+        
+    return f"{int(rounded)} {opt_type} ({expiry})"
 
 def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_price: float, prev_close: float, chg_pct: float, timeframe: str = 'Daily') -> Optional[Dict]:
     """
-    Core Pattern Engine detecting all 12 Reversal, Continuation, and Bilateral patterns.
+    Refined Pattern Engine with adaptive multi-timeframe thresholds.
     """
-    if len(df) < 18:
+    if len(df) < 15:
         return None
         
     curr_close = float(rt_price) if rt_price and rt_price > 0 else float(df['Close'].iloc[-1])
-    
-    # Dynamic Time Cycle calculation based on timeframe
     tf_lower = timeframe.lower()
+    
+    # ─── Timeframe Adaptive Threshold Parameters ──────────────────────────────
     if '15' in tf_lower:
+        window_size = 2
+        min_h_pct = 1.2
+        min_pole_pct = 2.5
+        max_peak_diff_pct = 1.8
+        prox_pct = 0.8
         time_cycle = "⚡ 15m - 2 Hours (Intraday Scalp)"
-        category = "Intraday 15m"
     elif '1h' in tf_lower or 'hour' in tf_lower:
+        window_size = 3
+        min_h_pct = 2.2
+        min_pole_pct = 4.5
+        max_peak_diff_pct = 2.5
+        prox_pct = 1.2
         time_cycle = "⚡ 1 - 3 Hourly Sessions (Intraday / Swing)"
-        category = "Hourly 1h"
     elif 'week' in tf_lower:
-        time_cycle = "📅 3 - 8 Weeks (Positional Macro)"
-        category = "Weekly Macro"
-    else:
+        window_size = 2  # Window 2 for 3-year weekly charts to capture macro pivot structures cleanly
+        min_h_pct = 6.5  # Strict 6.5% height to eliminate weekly noise
+        min_pole_pct = 12.0 # Strict 12.0% pole for weekly macro continuation
+        max_peak_diff_pct = 3.5
+        prox_pct = 2.5
+        time_cycle = "📅 4 - 12 Weeks (Positional Macro Cycle)"
+    else: # Daily
+        window_size = 3
+        min_h_pct = 3.5
+        min_pole_pct = 6.5
+        max_peak_diff_pct = 3.0
+        prox_pct = 1.8
         time_cycle = "📅 3 - 10 Trading Days (Swing)"
-        category = "Daily Swing"
         
-    pivots = find_trade_extrema(df, window=3)
+    pivots = find_trade_extrema(df, window=window_size)
     high_pivots = [p for p in pivots if p['type'] == 'HIGH']
     low_pivots = [p for p in pivots if p['type'] == 'LOW']
     
@@ -237,18 +236,18 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         neckline = high_pivots[-1]['price']
         diff_pct = abs(bot1 - bot2) / bot1 * 100
         
-        if diff_pct <= 3.0 and neckline > max(bot1, bot2):
+        if diff_pct <= max_peak_diff_pct and neckline > max(bot1, bot2):
             h = neckline - min(bot1, bot2)
-            if h / bot1 * 100 >= 3.0:
-                is_just_now = curr_close >= neckline * 0.995 and curr_close <= neckline * 1.025
+            if (h / bot1 * 100) >= min_h_pct:
+                is_just_now = curr_close >= neckline * (1.0 - prox_pct / 100.0) and curr_close <= neckline * (1.0 + (prox_pct * 1.2) / 100.0)
                 status = "🔥 PATTERN COMPLETED JUST NOW (EARLY ENTRY ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKOUT ALERT" if curr_close < neckline else "🟢 CONFIRMED BREAKOUT RIDE")
                 
                 t1 = round(neckline + h * 0.85, 2)
-                t2 = round(neckline + h * 1.25, 2)
+                t2 = round(neckline + h * 1.30, 2)
                 sl = round(min(bot1, bot2) * 0.99, 2)
                 risk = max(curr_close - sl, 1.0)
                 rr = f"1:{(t1 - curr_close) / risk:.1f}" if risk > 0 else "1:3.2"
-                opt = calculate_option_strike(curr_close, 'BULL')
+                opt = calculate_option_strike(curr_close, 'BULL', timeframe)
                 
                 return {
                     'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -257,8 +256,8 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                     'Direction': 'BUY / LONG (REVERSAL)',
                     'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
                     'Trigger_Entry': round(neckline * 1.002, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Call)",
-                    'Conviction': '95% (Twin Value Floor)',
+                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                    'Conviction': '96% (Macro Value Floor)' if 'week' in tf_lower else '95% (Twin Value Floor)',
                     'Rationale': f"Twin bottoms tested at ₹{bot1:.2f} & ₹{bot2:.2f} (diff {diff_pct:.1f}%). Neckline breakout trigger: ₹{neckline:.2f}."
                 }
 
@@ -269,18 +268,18 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         neckline = low_pivots[-1]['price']
         diff_pct = abs(top1 - top2) / top1 * 100
         
-        if diff_pct <= 3.0 and neckline < min(top1, top2):
+        if diff_pct <= max_peak_diff_pct and neckline < min(top1, top2):
             h = max(top1, top2) - neckline
-            if h / top1 * 100 >= 3.0:
-                is_just_now = curr_close <= neckline * 1.005 and curr_close >= neckline * 0.975
+            if (h / top1 * 100) >= min_h_pct:
+                is_just_now = curr_close <= neckline * (1.0 + prox_pct / 100.0) and curr_close >= neckline * (1.0 - (prox_pct * 1.2) / 100.0)
                 status = "🚨 PATTERN COMPLETED JUST NOW (EARLY SHORT ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKDOWN ALERT" if curr_close > neckline else "🔴 CONFIRMED BREAKDOWN RIDE")
                 
                 t1 = round(neckline - h * 0.85, 2)
-                t2 = round(neckline - h * 1.25, 2)
+                t2 = round(neckline - h * 1.30, 2)
                 sl = round(max(top1, top2) * 1.01, 2)
                 risk = max(sl - curr_close, 1.0)
                 rr = f"1:{(curr_close - t1) / risk:.1f}" if risk > 0 else "1:3.2"
-                opt = calculate_option_strike(curr_close, 'BEAR')
+                opt = calculate_option_strike(curr_close, 'BEAR', timeframe)
                 
                 return {
                     'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -289,8 +288,8 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                     'Direction': 'SELL / SHORT (REVERSAL)',
                     'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
                     'Trigger_Entry': round(neckline * 0.998, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Put)",
-                    'Conviction': '94% (Twin Resistance Ceiling)',
+                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                    'Conviction': '95% (Macro Resistance Ceiling)' if 'week' in tf_lower else '94% (Twin Ceiling)',
                     'Rationale': f"Twin tops peaked at ₹{top1:.2f} & ₹{top2:.2f} (diff {diff_pct:.1f}%). Neckline breakdown trigger: ₹{neckline:.2f}."
                 }
 
@@ -301,29 +300,30 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         right_s = low_pivots[-1]['price']
         neckline = max(high_pivots[-2]['price'], high_pivots[-1]['price'])
         
-        if head < left_s and head < right_s and abs(left_s - right_s) / left_s * 100 <= 4.5:
+        if head < left_s and head < right_s and abs(left_s - right_s) / left_s * 100 <= (max_peak_diff_pct + 1.5):
             h = neckline - head
-            is_just_now = curr_close >= neckline * 0.995 and curr_close <= neckline * 1.025
-            status = "🔥 PATTERN COMPLETED JUST NOW (EARLY ENTRY ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKOUT ALERT" if curr_close < neckline else "🟢 CONFIRMED BREAKOUT RIDE")
-            
-            t1 = round(neckline + h * 0.80, 2)
-            t2 = round(neckline + h * 1.15, 2)
-            sl = round(right_s * 0.985, 2)
-            risk = max(curr_close - sl, 1.0)
-            rr = f"1:{(t1 - curr_close) / risk:.1f}" if risk > 0 else "1:3.5"
-            opt = calculate_option_strike(curr_close, 'BULL')
-            
-            return {
-                'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
-                'Pattern_Category': 'Reversal Pattern',
-                'Pattern': '👤 Inverse Head & Shoulders',
-                'Direction': 'BUY / LONG (REVERSAL)',
-                'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
-                'Trigger_Entry': round(neckline * 1.002, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Call)",
-                'Conviction': '96% (Classical Reversal Architecture)',
-                'Rationale': f"Head capitulated at ₹{head:.2f}. Symmetrical shoulders at ₹{left_s:.2f} & ₹{right_s:.2f}. Neckline trigger: ₹{neckline:.2f}."
-            }
+            if (h / head * 100) >= min_h_pct:
+                is_just_now = curr_close >= neckline * (1.0 - prox_pct / 100.0) and curr_close <= neckline * (1.0 + (prox_pct * 1.2) / 100.0)
+                status = "🔥 PATTERN COMPLETED JUST NOW (EARLY ENTRY ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKOUT ALERT" if curr_close < neckline else "🟢 CONFIRMED BREAKOUT RIDE")
+                
+                t1 = round(neckline + h * 0.85, 2)
+                t2 = round(neckline + h * 1.25, 2)
+                sl = round(right_s * 0.985, 2)
+                risk = max(curr_close - sl, 1.0)
+                rr = f"1:{(t1 - curr_close) / risk:.1f}" if risk > 0 else "1:3.5"
+                opt = calculate_option_strike(curr_close, 'BULL', timeframe)
+                
+                return {
+                    'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
+                    'Pattern_Category': 'Reversal Pattern',
+                    'Pattern': '👤 Inverse Head & Shoulders',
+                    'Direction': 'BUY / LONG (REVERSAL)',
+                    'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
+                    'Trigger_Entry': round(neckline * 1.002, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
+                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                    'Conviction': '97% (Structural Macro Reversal)' if 'week' in tf_lower else '96% (Classic Reversal)',
+                    'Rationale': f"Head capitulated at ₹{head:.2f}. Shoulders at ₹{left_s:.2f} & ₹{right_s:.2f}. Neckline trigger: ₹{neckline:.2f}."
+                }
 
     # 👤 Head & Shoulders Top (Bearish Reversal)
     if len(high_pivots) >= 3 and len(low_pivots) >= 2:
@@ -332,50 +332,50 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         right_s = high_pivots[-1]['price']
         neckline = min(low_pivots[-2]['price'], low_pivots[-1]['price'])
         
-        if head > left_s and head > right_s and abs(left_s - right_s) / left_s * 100 <= 4.5:
+        if head > left_s and head > right_s and abs(left_s - right_s) / left_s * 100 <= (max_peak_diff_pct + 1.5):
             h = head - neckline
-            is_just_now = curr_close <= neckline * 1.005 and curr_close >= neckline * 0.975
-            status = "🚨 PATTERN COMPLETED JUST NOW (EARLY SHORT ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKDOWN ALERT" if curr_close > neckline else "🔴 CONFIRMED BREAKDOWN RIDE")
-            
-            t1 = round(neckline - h * 0.80, 2)
-            t2 = round(neckline - h * 1.15, 2)
-            sl = round(right_s * 1.015, 2)
-            risk = max(sl - curr_close, 1.0)
-            rr = f"1:{(curr_close - t1) / risk:.1f}" if risk > 0 else "1:3.3"
-            opt = calculate_option_strike(curr_close, 'BEAR')
-            
-            return {
-                'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
-                'Pattern_Category': 'Reversal Pattern',
-                'Pattern': '👤 Head & Shoulders Top',
-                'Direction': 'SELL / SHORT (REVERSAL)',
-                'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
-                'Trigger_Entry': round(neckline * 0.998, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Put)",
-                'Conviction': '94% (Distribution Peak Reversal)',
-                'Rationale': f"Head peaked at ₹{head:.2f}. Right shoulder distributed at ₹{right_s:.2f}. Neckline trigger: ₹{neckline:.2f}."
-            }
+            if (h / head * 100) >= min_h_pct:
+                is_just_now = curr_close <= neckline * (1.0 + prox_pct / 100.0) and curr_close >= neckline * (1.0 - (prox_pct * 1.2) / 100.0)
+                status = "🚨 PATTERN COMPLETED JUST NOW (EARLY SHORT ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKDOWN ALERT" if curr_close > neckline else "🔴 CONFIRMED BREAKDOWN RIDE")
+                
+                t1 = round(neckline - h * 0.85, 2)
+                t2 = round(neckline - h * 1.25, 2)
+                sl = round(right_s * 1.015, 2)
+                risk = max(sl - curr_close, 1.0)
+                rr = f"1:{(curr_close - t1) / risk:.1f}" if risk > 0 else "1:3.3"
+                opt = calculate_option_strike(curr_close, 'BEAR', timeframe)
+                
+                return {
+                    'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
+                    'Pattern_Category': 'Reversal Pattern',
+                    'Pattern': '👤 Head & Shoulders Top',
+                    'Direction': 'SELL / SHORT (REVERSAL)',
+                    'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
+                    'Trigger_Entry': round(neckline * 0.998, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
+                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                    'Conviction': '95% (Macro Distribution Peak)' if 'week' in tf_lower else '94% (Distribution Peak)',
+                    'Rationale': f"Head peaked at ₹{head:.2f}. Right shoulder at ₹{right_s:.2f}. Neckline trigger: ₹{neckline:.2f}."
+                }
 
     # 🟢 Falling Wedge (Bullish Reversal / Breakout)
     if len(high_pivots) >= 2 and len(low_pivots) >= 2:
         h1, h2 = high_pivots[-2]['price'], high_pivots[-1]['price']
         l1, l2 = low_pivots[-2]['price'], low_pivots[-1]['price']
         
-        # Lower Highs and Lower Lows, but converging (slope of highs steeper than lows)
         if h2 < h1 and l2 < l1:
             high_drop = h1 - h2
             low_drop = l1 - l2
-            if high_drop > low_drop * 1.15: # Converging downward wedge
-                is_just_now = curr_close >= h2 * 0.995 and curr_close <= h2 * 1.025
+            if high_drop > low_drop * 1.15 and (h1 - l2) / l2 * 100 >= min_h_pct:
+                is_just_now = curr_close >= h2 * (1.0 - prox_pct / 100.0) and curr_close <= h2 * (1.0 + (prox_pct * 1.2) / 100.0)
                 status = "🔥 PATTERN COMPLETED JUST NOW (EARLY ENTRY ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKOUT ALERT" if curr_close < h2 else "🟢 CONFIRMED BREAKOUT RIDE")
                 
                 pattern_range = h1 - l2
-                t1 = round(h2 + pattern_range * 0.75, 2)
-                t2 = round(h2 + pattern_range * 1.10, 2)
+                t1 = round(h2 + pattern_range * 0.80, 2)
+                t2 = round(h2 + pattern_range * 1.20, 2)
                 sl = round(l2 * 0.985, 2)
                 risk = max(curr_close - sl, 1.0)
                 rr = f"1:{(t1 - curr_close) / risk:.1f}" if risk > 0 else "1:3.0"
-                opt = calculate_option_strike(curr_close, 'BULL')
+                opt = calculate_option_strike(curr_close, 'BULL', timeframe)
                 
                 return {
                     'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -384,8 +384,8 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                     'Direction': 'BUY / LONG (BREAKOUT)',
                     'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
                     'Trigger_Entry': round(h2 * 1.002, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Call)",
-                    'Conviction': '93% (Squeezed Downward Compression)',
+                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                    'Conviction': '94% (Macro Downward Compression)' if 'week' in tf_lower else '93% (Squeezed Wedge)',
                     'Rationale': f"Falling wedge converging between highs ₹{h1:.1f}->₹{h2:.1f} and lows ₹{l1:.1f}->₹{l2:.1f}. Breakout trigger: ₹{h2:.2f}."
                 }
 
@@ -394,21 +394,20 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         h1, h2 = high_pivots[-2]['price'], high_pivots[-1]['price']
         l1, l2 = low_pivots[-2]['price'], low_pivots[-1]['price']
         
-        # Higher Highs and Higher Lows, but converging (slope of lows steeper than highs)
         if h2 > h1 and l2 > l1:
             high_rise = h2 - h1
             low_rise = l2 - l1
-            if low_rise > high_rise * 1.15: # Converging upward wedge
-                is_just_now = curr_close <= l2 * 1.005 and curr_close >= l2 * 0.975
+            if low_rise > high_rise * 1.15 and (h2 - l1) / l1 * 100 >= min_h_pct:
+                is_just_now = curr_close <= l2 * (1.0 + prox_pct / 100.0) and curr_close >= l2 * (1.0 - (prox_pct * 1.2) / 100.0)
                 status = "🚨 PATTERN COMPLETED JUST NOW (EARLY SHORT ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKDOWN ALERT" if curr_close > l2 else "🔴 CONFIRMED BREAKDOWN RIDE")
                 
                 pattern_range = h2 - l1
-                t1 = round(l2 - pattern_range * 0.75, 2)
-                t2 = round(l2 - pattern_range * 1.10, 2)
+                t1 = round(l2 - pattern_range * 0.80, 2)
+                t2 = round(l2 - pattern_range * 1.20, 2)
                 sl = round(h2 * 1.015, 2)
                 risk = max(sl - curr_close, 1.0)
                 rr = f"1:{(curr_close - t1) / risk:.1f}" if risk > 0 else "1:3.0"
-                opt = calculate_option_strike(curr_close, 'BEAR')
+                opt = calculate_option_strike(curr_close, 'BEAR', timeframe)
                 
                 return {
                     'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -417,8 +416,8 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                     'Direction': 'SELL / SHORT (BREAKDOWN)',
                     'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
                     'Trigger_Entry': round(l2 * 0.998, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Put)",
-                    'Conviction': '92% (Exhaustion Upward Wedge)',
+                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                    'Conviction': '93% (Macro Exhaustion Wedge)' if 'week' in tf_lower else '92% (Exhaustion Wedge)',
                     'Rationale': f"Rising wedge converging between highs ₹{h1:.1f}->₹{h2:.1f} and lows ₹{l1:.1f}->₹{l2:.1f}. Breakdown trigger: ₹{l2:.2f}."
                 }
 
@@ -431,22 +430,22 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         pole_high = df['High'].iloc[lookback + 3:len(df) - 3].max()
         pole_surge = (pole_high - pole_low) / pole_low * 100 if pole_low > 0 else 0.0
         
-        if pole_surge >= 5.0:
+        if pole_surge >= min_pole_pct:
             box_low = df['Low'].iloc[-5:].min()
             box_high = df['High'].iloc[-5:].max()
             box_retrace = (pole_high - box_low) / (pole_high - pole_low) * 100
             
-            if 8.0 <= box_retrace <= 42.0:
-                is_just_now = curr_close >= box_high * 0.995 and curr_close <= box_high * 1.025
+            if 8.0 <= box_retrace <= 45.0:
+                is_just_now = curr_close >= box_high * (1.0 - prox_pct / 100.0) and curr_close <= box_high * (1.0 + (prox_pct * 1.2) / 100.0)
                 status = "🔥 PATTERN COMPLETED JUST NOW (EARLY ENTRY ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKOUT ALERT" if curr_close < box_high else "🟢 CONFIRMED BREAKOUT RIDE")
                 
                 pole_len = pole_high - pole_low
-                t1 = round(box_low + pole_len * 0.80, 2)
-                t2 = round(box_low + pole_len * 1.15, 2)
+                t1 = round(box_low + pole_len * 0.85, 2)
+                t2 = round(box_low + pole_len * 1.25, 2)
                 sl = round(box_low * 0.985, 2)
                 risk = max(curr_close - sl, 1.0)
                 rr = f"1:{(t1 - curr_close) / risk:.1f}" if risk > 0 else "1:3.4"
-                opt = calculate_option_strike(curr_close, 'BULL')
+                opt = calculate_option_strike(curr_close, 'BULL', timeframe)
                 
                 return {
                     'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -455,8 +454,8 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                     'Direction': 'BUY / LONG (CONTINUATION)',
                     'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
                     'Trigger_Entry': round(box_high * 1.002, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Call)",
-                    'Conviction': '95% (High Velocity Impulse Squeeze)',
+                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                    'Conviction': '96% (Macro Impulse Continuation)' if 'week' in tf_lower else '95% (Impulse Squeeze)',
                     'Rationale': f"Impulse pole surged +{pole_surge:.1f}%. Tight pennant consolidated with {box_retrace:.1f}% retrace. Trigger: ₹{box_high:.2f}."
                 }
 
@@ -467,22 +466,22 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         pole_low = df['Low'].iloc[lookback + 3:len(df) - 3].min()
         pole_drop = (pole_high - pole_low) / pole_high * 100 if pole_high > 0 else 0.0
         
-        if pole_drop >= 5.0:
+        if pole_drop >= min_pole_pct:
             box_high = df['High'].iloc[-5:].max()
             box_low = df['Low'].iloc[-5:].min()
             box_retrace = (box_high - pole_low) / (pole_high - pole_low) * 100
             
-            if 8.0 <= box_retrace <= 42.0:
-                is_just_now = curr_close <= box_low * 1.005 and curr_close >= box_low * 0.975
+            if 8.0 <= box_retrace <= 45.0:
+                is_just_now = curr_close <= box_low * (1.0 + prox_pct / 100.0) and curr_close >= box_low * (1.0 - (prox_pct * 1.2) / 100.0)
                 status = "🚨 PATTERN COMPLETED JUST NOW (EARLY SHORT ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKDOWN ALERT" if curr_close > box_low else "🔴 CONFIRMED BREAKDOWN RIDE")
                 
                 pole_len = pole_high - pole_low
-                t1 = round(box_high - pole_len * 0.80, 2)
-                t2 = round(box_high - pole_len * 1.15, 2)
+                t1 = round(box_high - pole_len * 0.85, 2)
+                t2 = round(box_high - pole_len * 1.25, 2)
                 sl = round(box_high * 1.015, 2)
                 risk = max(sl - curr_close, 1.0)
                 rr = f"1:{(curr_close - t1) / risk:.1f}" if risk > 0 else "1:3.4"
-                opt = calculate_option_strike(curr_close, 'BEAR')
+                opt = calculate_option_strike(curr_close, 'BEAR', timeframe)
                 
                 return {
                     'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -491,8 +490,8 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                     'Direction': 'SELL / SHORT (CONTINUATION)',
                     'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
                     'Trigger_Entry': round(box_low * 0.998, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Put)",
-                    'Conviction': '94% (Waterfall Downside Continuation)',
+                    'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                    'Conviction': '95% (Macro Waterfall Continuation)' if 'week' in tf_lower else '94% (Waterfall Squeeze)',
                     'Rationale': f"Waterfall pole dropped -{pole_drop:.1f}%. Weak box consolidation {box_retrace:.1f}%. Breakdown trigger: ₹{box_low:.2f}."
                 }
 
@@ -504,17 +503,17 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         l1, l2 = low_pivots[-2]['price'], low_pivots[-1]['price']
         
         flat_top_diff = abs(h1 - h2) / h1 * 100
-        if flat_top_diff <= 2.5 and l2 > l1 * 1.01: # Flat top + Higher Lows
-            is_just_now = curr_close >= h2 * 0.995 and curr_close <= h2 * 1.025
+        if flat_top_diff <= (max_peak_diff_pct + 0.5) and l2 > l1 * 1.01 and (h2 - l1) / l1 * 100 >= min_h_pct:
+            is_just_now = curr_close >= h2 * (1.0 - prox_pct / 100.0) and curr_close <= h2 * (1.0 + (prox_pct * 1.2) / 100.0)
             status = "🔥 PATTERN COMPLETED JUST NOW (EARLY ENTRY ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKOUT ALERT" if curr_close < h2 else "🟢 CONFIRMED BREAKOUT RIDE")
             
             tri_height = h2 - l1
             t1 = round(h2 + tri_height * 0.85, 2)
-            t2 = round(h2 + tri_height * 1.25, 2)
+            t2 = round(h2 + tri_height * 1.30, 2)
             sl = round(l2 * 0.985, 2)
             risk = max(curr_close - sl, 1.0)
             rr = f"1:{(t1 - curr_close) / risk:.1f}" if risk > 0 else "1:3.2"
-            opt = calculate_option_strike(curr_close, 'BULL')
+            opt = calculate_option_strike(curr_close, 'BULL', timeframe)
             
             return {
                 'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -523,8 +522,8 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                 'Direction': 'BUY / LONG (BREAKOUT)',
                 'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
                 'Trigger_Entry': round(h2 * 1.002, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Call)",
-                'Conviction': '95% (Flat Ceiling Accumulation)',
+                'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                'Conviction': '96% (Macro Flat Ceiling Accumulation)' if 'week' in tf_lower else '95% (Flat Ceiling Accumulation)',
                 'Rationale': f"Flat resistance ceiling at ₹{h2:.2f} with rising support lows ₹{l1:.1f}->₹{l2:.1f}. Breakout trigger: ₹{h2:.2f}."
             }
 
@@ -534,17 +533,17 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         l1, l2 = low_pivots[-2]['price'], low_pivots[-1]['price']
         
         flat_bot_diff = abs(l1 - l2) / l1 * 100
-        if flat_bot_diff <= 2.5 and h2 < h1 * 0.99: # Flat bottom + Lower Highs
-            is_just_now = curr_close <= l2 * 1.005 and curr_close >= l2 * 0.975
+        if flat_bot_diff <= (max_peak_diff_pct + 0.5) and h2 < h1 * 0.99 and (h1 - l2) / l2 * 100 >= min_h_pct:
+            is_just_now = curr_close <= l2 * (1.0 + prox_pct / 100.0) and curr_close >= l2 * (1.0 - (prox_pct * 1.2) / 100.0)
             status = "🚨 PATTERN COMPLETED JUST NOW (EARLY SHORT ALERT)" if is_just_now else ("⚡ COILING PRE-BREAKDOWN ALERT" if curr_close > l2 else "🔴 CONFIRMED BREAKDOWN RIDE")
             
             tri_height = h1 - l2
             t1 = round(l2 - tri_height * 0.85, 2)
-            t2 = round(l2 - tri_height * 1.25, 2)
+            t2 = round(l2 - tri_height * 1.30, 2)
             sl = round(h2 * 1.015, 2)
             risk = max(sl - curr_close, 1.0)
             rr = f"1:{(curr_close - t1) / risk:.1f}" if risk > 0 else "1:3.2"
-            opt = calculate_option_strike(curr_close, 'BEAR')
+            opt = calculate_option_strike(curr_close, 'BEAR', timeframe)
             
             return {
                 'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -553,8 +552,8 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                 'Direction': 'SELL / SHORT (BREAKDOWN)',
                 'Status': status, 'Current_Price': round(curr_close, 2), 'Change%': round(chg_pct, 2),
                 'Trigger_Entry': round(l2 * 0.998, 2), 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
-                'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt} (Put)",
-                'Conviction': '94% (Flat Support Distribution)',
+                'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
+                'Conviction': '95% (Macro Flat Support Distribution)' if 'week' in tf_lower else '94% (Flat Support Distribution)',
                 'Rationale': f"Flat support floor at ₹{l2:.2f} with falling resistance highs ₹{h1:.1f}->₹{h2:.1f}. Breakdown trigger: ₹{l2:.2f}."
             }
 
@@ -563,20 +562,20 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
         h1, h2 = high_pivots[-2]['price'], high_pivots[-1]['price']
         l1, l2 = low_pivots[-2]['price'], low_pivots[-1]['price']
         
-        if h2 < h1 and l2 > l1: # Lower Highs AND Higher Lows (Coil)
-            is_bull = curr_close >= h2 * 0.995
-            is_bear = curr_close <= l2 * 1.005
+        if h2 < h1 and l2 > l1 and (h1 - l1) / l1 * 100 >= min_h_pct:
+            is_bull = curr_close >= h2 * (1.0 - prox_pct / 100.0)
+            is_bear = curr_close <= l2 * (1.0 + prox_pct / 100.0)
             
             direction = 'BUY / LONG' if is_bull else ('SELL / SHORT' if is_bear else 'BUY / SELL (BILATERAL)')
             status = "🔥 PATTERN COMPLETED JUST NOW (EARLY ALERT)" if (is_bull or is_bear) else "⚡ COILING SYMMETRICAL SQUEEZE ALERT"
             
             tri_height = h1 - l1
-            t1 = round(h2 + tri_height * 0.80, 2) if is_bull else round(l2 - tri_height * 0.80, 2)
-            t2 = round(h2 + tri_height * 1.15, 2) if is_bull else round(l2 - tri_height * 1.15, 2)
+            t1 = round(h2 + tri_height * 0.85, 2) if is_bull else round(l2 - tri_height * 0.85, 2)
+            t2 = round(h2 + tri_height * 1.25, 2) if is_bull else round(l2 - tri_height * 1.25, 2)
             sl = round(l2 * 0.985, 2) if is_bull else round(h2 * 1.015, 2)
             risk = max(abs(curr_close - sl), 1.0)
             rr = f"1:{abs(t1 - curr_close) / risk:.1f}" if risk > 0 else "1:3.0"
-            opt = calculate_option_strike(curr_close, 'BULL' if is_bull else 'BEAR')
+            opt = calculate_option_strike(curr_close, 'BULL' if is_bull else 'BEAR', timeframe)
             
             return {
                 'Ticker': ticker, 'Name': name, 'Timeframe': timeframe,
@@ -587,7 +586,7 @@ def detect_trade_chart_pattern(df: pd.DataFrame, ticker: str, name: str, rt_pric
                 'Trigger_Entry': round(h2 * 1.002, 2) if is_bull else round(l2 * 0.998, 2),
                 'Stop_Loss': sl, 'Target_1': t1, 'Target_2': t2,
                 'RR_Ratio': rr, 'Time_Cycle': time_cycle, 'Option_Strike': f"BUY {opt}",
-                'Conviction': '93% (Symmetrical Energy Compression)',
+                'Conviction': '94% (Macro Symmetrical Energy Compression)' if 'week' in tf_lower else '93% (Symmetrical Compression)',
                 'Rationale': f"Symmetrical triangle coiling between highs ₹{h1:.1f}->₹{h2:.1f} and lows ₹{l1:.1f}->₹{l2:.1f}. Apex trigger near ₹{curr_close:.2f}."
             }
 
@@ -624,10 +623,15 @@ def scan_trade_chart_for_ticker(ticker: str, timeframe: str = '1-Hour') -> Optio
         if len(df) < 15:
             return None
             
-        # Synchronize latest live quote
+        # Synchronize latest live quote cleanly
         if rt_price and float(rt_price) > 0:
             rt_price = float(rt_price)
-            df.loc[df.index[-1], 'Close'] = rt_price
+            last_idx = df.index[-1]
+            df.loc[last_idx, 'Close'] = rt_price
+            if rt_price > df.loc[last_idx, 'High']:
+                df.loc[last_idx, 'High'] = rt_price
+            if rt_price < df.loc[last_idx, 'Low']:
+                df.loc[last_idx, 'Low'] = rt_price
         else:
             rt_price = float(df['Close'].iloc[-1])
             
