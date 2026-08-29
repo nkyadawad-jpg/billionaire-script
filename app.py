@@ -26,6 +26,7 @@ from elliott_wave import analyze_multi_timeframe_elliott, scan_all_elliott_wave_
 from next_day_mover import scan_next_day_movers
 from index_elliott import scan_all_nse_indices, analyze_single_index, NSE_INDICES
 from chart_patterns import scan_all_chart_patterns, scan_chart_patterns_for_ticker
+from trade_chart_patterns import scan_all_trade_charts, scan_trade_chart_for_ticker, get_pattern_svg
 from pdf_generator import generate_pdf_report
 
 # Configure logging
@@ -513,8 +514,9 @@ st.markdown("""
 
 # ─── Primary Tabs ─────────────────────────────────────────────────────────────
 
-tab_indices, tab_patterns, tab_movers, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
+tab_indices, tab_trade_chart, tab_patterns, tab_movers, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
     "🏛️ NSE Major Indices (NIFTY 50 & SENSEX)",
+    "📈 TRADE CHART (Reversals, Continuations & Triangles)",
     "📐 Institutional Chart Patterns (Pre-Breakouts)",
     "🚀 Next-Day Movers (+3% to +20% / -3% to -20%)",
     "🎯 F&O Trade Setups (R:R & Time)",
@@ -641,7 +643,191 @@ with tab_indices:
         st.info("Unable to fetch indices data. Please check connection.")
 
 
-# ─── TAB 2: Institutional Chart Patterns (Price Action & Pre-Breakouts) ───────
+# ─── TAB 2: TRADE CHART — Institutional Price Action Setups ─────────────────
+
+with tab_trade_chart:
+    st.markdown("### 📈 TRADE CHART — Institutional Price Action Setups (15m, 1h, Daily, Weekly)")
+    st.markdown("""
+    Detects 100% of classical institutional patterns (**Reversals, Continuations, Bilateral Triangles**) with **Instant Early Completion Alerts**:
+    - 🔄 **Reversal Patterns**: Double Top/Bottom, Head & Shoulders, Inverse H&S, Rising/Falling Wedges
+    - 📈 **Continuation Patterns**: Bullish/Bearish Pennants, Bullish/Bearish Rectangles & Channels
+    - 📐 **Bilateral Triangles**: Ascending Triangle, Descending Triangle, Symmetrical Triangle
+    """)
+    
+    col_tc_tf, col_tc_univ, col_tc_btn = st.columns([1.5, 1.5, 1])
+    with col_tc_tf:
+        tc_timeframe = st.selectbox(
+            "⏱️ **Timeframe**",
+            ["15-Min (Intraday Scalp Alert)", "1-Hour (Swing / Intraday)", "Daily (Swing Trading)", "Weekly (Positional Macro)"],
+            key="tc_tf_select"
+        )
+    with col_tc_univ:
+        tc_universe = st.selectbox(
+            "🌐 **Scan Universe**",
+            ["⚡ Top 50 F&O Stocks", "📊 Full 200 F&O Universe", "🌐 Full 500 Universe"],
+            key="tc_univ_select"
+        )
+    with col_tc_btn:
+        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+        run_tc_scan = st.button("🚀 **Scan Trade Charts**", use_container_width=True, type="primary")
+        
+    clean_tc_tf = "15m" if "15-Min" in tc_timeframe else ("1h" if "1-Hour" in tc_timeframe else ("Weekly" if "Weekly" in tc_timeframe else "Daily"))
+    
+    if run_tc_scan or 'trade_chart_df' not in st.session_state:
+        if "500" in tc_universe:
+            target_tickers = get_nifty500_tickers()
+        elif "200" in tc_universe:
+            target_tickers = get_nifty200_tickers()
+        else:
+            target_tickers = get_nifty50_tickers()
+            
+        prog_tc = st.progress(0)
+        status_tc = st.empty()
+        
+        def update_tc_prog(curr, tot, name):
+            prog_tc.progress(curr / tot)
+            status_tc.text(f"Scanning Trade Charts ({curr}/{tot}): {name}")
+            
+        with st.spinner(f"Scanning {len(target_tickers)} stocks for Trade Chart Setups ({clean_tc_tf} Timeframe)..."):
+            tc_df = scan_all_trade_charts(target_tickers, timeframe=clean_tc_tf, progress_callback=update_tc_prog)
+            st.session_state['trade_chart_df'] = tc_df
+            st.session_state['tc_last_tf'] = tc_timeframe
+            
+        prog_tc.empty()
+        status_tc.empty()
+    else:
+        tc_df = st.session_state.get('trade_chart_df', pd.DataFrame())
+        
+    if not tc_df.empty:
+        col_tc_cnt, col_tc_pdf = st.columns([3, 1])
+        with col_tc_cnt:
+            st.markdown(f"#### ⚡ Active Trade Chart Setups: **{len(tc_df)} Found** ({st.session_state.get('tc_last_tf', tc_timeframe)})")
+        with col_tc_pdf:
+            pdf_tc_bytes = generate_pdf_report(
+                tc_df,
+                title="Trade Chart Institutional Report",
+                subtitle=f"Timeframe: {st.session_state.get('tc_last_tf', tc_timeframe)}",
+                mode=clean_tc_tf,
+                universe=tc_universe
+            )
+            st.download_button(
+                label="📄 **Download Trade Chart PDF**",
+                data=pdf_tc_bytes,
+                file_name=f"Trade_Chart_Report_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+        # Sub-category tabs
+        tc_tab_all, tc_tab_early, tc_tab_rev, tc_tab_cont, tc_tab_tri = st.tabs([
+            f"⚡ All Trade Charts ({len(tc_df)})",
+            f"🔥 Early Entry Alerts ({len(tc_df[tc_df['Status'].str.contains('JUST NOW', na=False)])})",
+            f"🔄 Reversal Patterns ({len(tc_df[tc_df['Pattern_Category'].str.contains('Reversal', na=False)])})",
+            f"📈 Continuation Patterns ({len(tc_df[tc_df['Pattern_Category'].str.contains('Continuation', na=False)])})",
+            f"📐 Bilateral Triangles ({len(tc_df[tc_df['Pattern_Category'].str.contains('Bilateral', na=False)])})"
+        ])
+        
+        def render_trade_chart_table(df_t, cat_label: str = "Trade Charts"):
+            if df_t.empty:
+                st.info(f"No candidates in {cat_label} currently.")
+                return
+                
+            col_t_btn1, col_t_btn2 = st.columns([3, 1])
+            with col_t_btn2:
+                pdf_sub_tc = generate_pdf_report(
+                    df_t,
+                    title=f"Trade Charts — {cat_label}",
+                    subtitle=f"Timeframe: {st.session_state.get('tc_last_tf', tc_timeframe)}",
+                    mode=clean_tc_tf,
+                    universe=tc_universe
+                )
+                st.download_button(
+                    label=f"📄 **Download {cat_label} PDF**",
+                    data=pdf_sub_tc,
+                    file_name=f"{cat_label.replace(' ', '_')}_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    key=f"btn_pdf_tc_{cat_label}_{time.time()}",
+                    use_container_width=True
+                )
+                
+            tc_display_cols = [
+                'Ticker', 'Name', 'Pattern_Category', 'Pattern', 'Direction', 'Status', 'Current_Price', 'Change%',
+                'Trigger_Entry', 'Stop_Loss', 'Target_1', 'Target_2', 'RR_Ratio', 'Time_Cycle', 'Option_Strike', 'Conviction'
+            ]
+            available_tc = [c for c in tc_display_cols if c in df_t.columns]
+            
+            styled_tc = df_t[available_tc].style \
+                .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BUY' in str(v) else ('color: #EF4444; font-weight: bold;' if 'SELL' in str(v) else ''), subset=['Direction'] if 'Direction' in available_tc else []) \
+                .map(lambda v: 'color: #FBBF24; font-weight: bold;' if 'JUST NOW' in str(v) else 'color: #38BDF8;', subset=['Status'] if 'Status' in available_tc else []) \
+                .format({
+                    'Current_Price': '₹{:.2f}',
+                    'Change%': '{:+.2f}%',
+                    'Trigger_Entry': '₹{:.2f}',
+                    'Stop_Loss': '₹{:.2f}',
+                    'Target_1': '₹{:.2f}',
+                    'Target_2': '₹{:.2f}'
+                }, na_rep='—')
+                
+            st.dataframe(styled_tc, use_container_width=True, height=380)
+            
+        with tc_tab_all: render_trade_chart_table(tc_df, "All Trade Charts")
+        with tc_tab_early: render_trade_chart_table(tc_df[tc_df['Status'].str.contains('JUST NOW', na=False)], "Early Entry Alerts")
+        with tc_tab_rev: render_trade_chart_table(tc_df[tc_df['Pattern_Category'].str.contains('Reversal', na=False)], "Reversal Patterns")
+        with tc_tab_cont: render_trade_chart_table(tc_df[tc_df['Pattern_Category'].str.contains('Continuation', na=False)], "Continuation Patterns")
+        with tc_tab_tri: render_trade_chart_table(tc_df[tc_df['Pattern_Category'].str.contains('Bilateral', na=False)], "Bilateral Triangles")
+        
+        st.markdown("---")
+        st.markdown("#### 🔍 Interactive Trade Chart Visualizer & Pattern Diagram")
+        tc_ticker_list = tc_df['Ticker'].tolist()
+        sel_tc_ticker = st.selectbox("Select Trade Chart Stock to Inspect:", tc_ticker_list, key="tc_select_stock")
+        
+        if sel_tc_ticker:
+            matched_tc = tc_df[tc_df['Ticker'] == sel_tc_ticker].iloc[0].to_dict()
+            svg_diagram = get_pattern_svg(matched_tc['Pattern'])
+            
+            col_card_info, col_card_diagram = st.columns([2.2, 1])
+            with col_card_info:
+                st.markdown(f"""
+                <div class="pattern-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:1.2rem; font-weight:800; color:#F8FAFC;">📈 {matched_tc['Pattern']} — {matched_tc['Ticker']} ({matched_tc['Name']})</span>
+                        <span style="font-size:1.0rem; font-weight:700; color:#FDE047;">{matched_tc['Status']}</span>
+                    </div>
+                    <hr style="margin: 8px 0; border-color: #334155;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px;">
+                        <div>
+                            <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Live Spot Price:</b> ₹{matched_tc['Current_Price']:.2f} ({matched_tc['Change%']:+.2f}%)</p>
+                            <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Trigger Entry:</b> ₹{matched_tc['Trigger_Entry']:.2f}</p>
+                            <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Invalidation SL:</b> ₹{matched_tc['Stop_Loss']:.2f}</p>
+                        </div>
+                        <div>
+                            <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> ₹{matched_tc['Target_1']:.2f}</p>
+                            <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Target 2 (Runner):</b> ₹{matched_tc['Target_2']:.2f}</p>
+                            <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Risk:Reward:</b> {matched_tc['RR_Ratio']}</p>
+                        </div>
+                        <div>
+                            <p style="color:#A5B4FC; margin:2px 0; font-size:0.85rem;"><b>Target Reach Timing:</b> {matched_tc['Time_Cycle']}</p>
+                            <p style="color:#F472B6; margin:2px 0; font-size:0.85rem;"><b>Wall Street Option:</b> {matched_tc['Option_Strike']}</p>
+                            <p style="color:#94A3B8; margin:2px 0; font-size:0.85rem;"><b>Conviction:</b> {matched_tc['Conviction']}</p>
+                        </div>
+                    </div>
+                    <p style="color:#E2E8F0; font-size:0.85rem; margin:8px 0 0 0;">💡 <b>Pattern Rationale:</b> {matched_tc['Rationale']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with col_card_diagram:
+                st.markdown(f"##### 📐 Pattern Geometry Diagram")
+                st.markdown(svg_diagram, unsafe_allow_html=True)
+                
+            with st.spinner(f"Loading chart for {sel_tc_ticker}..."):
+                df_chart_tc, _, _, _ = fetch_stock_data_realtime(sel_tc_ticker, period='1y')
+                if df_chart_tc is not None and not df_chart_tc.empty:
+                    create_chart_pattern_chart(df_chart_tc, matched_tc, title=f"{sel_tc_ticker} — {matched_tc['Pattern']} ({clean_tc_tf})")
+    else:
+        st.info("No stocks currently meet strict pattern compression criteria in this scan. Click 'Scan Trade Charts' to run again.")
+
+
+# ─── TAB 3: Institutional Chart Patterns (Price Action & Pre-Breakouts) ───────
 
 with tab_patterns:
     st.markdown("### 📐 Institutional Price Action Chart Patterns (Top 500 Universe)")
