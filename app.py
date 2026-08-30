@@ -44,7 +44,7 @@ st.set_page_config(
 
 # ─── MASTER PASSWORD SECURITY GATE ──────────────────────────────────────────
 
-DEFAULT_PASSCODE = "NOEMAN2026"
+DEFAULT_PASSCODE = "1919"
 
 def check_password() -> bool:
     """Returns True if the user has authenticated with the correct passcode."""
