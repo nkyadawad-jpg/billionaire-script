@@ -42,6 +42,72 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ─── MASTER PASSWORD SECURITY GATE ──────────────────────────────────────────
+
+DEFAULT_PASSCODE = "NOEMAN2026"
+
+def check_password() -> bool:
+    """Returns True if the user has authenticated with the correct passcode."""
+    if st.session_state.get("authenticated", False):
+        return True
+
+    master_passcode = os.environ.get("APP_PASSWORD", DEFAULT_PASSCODE)
+
+    st.markdown("""
+    <style>
+    .login-container {
+        max-width: 480px;
+        margin: 60px auto 20px auto;
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        padding: 40px 30px;
+        border-radius: 20px;
+        border: 1px solid #6366f1;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        text-align: center;
+    }
+    .login-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #F8FAFC;
+        margin-bottom: 4px;
+    }
+    .login-sub {
+        color: #A5B4FC;
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+    }
+    </style>
+    <div class="login-container">
+        <p class="login-title">🔒 RESTRICTED INSTITUTIONAL ACCESS</p>
+        <p class="login-sub">👑 BILLIONAIRE SCRIPT by Noeman NK</p>
+        <p style="color:#94A3B8; font-size:0.88rem; margin-bottom:15px; line-height:1.5;">
+            System data is password-protected. Please enter your Master Passcode to unlock real-time trade scanners and institutional PDF dossiers.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+    with col_l2:
+        entered_pass = st.text_input("🔑 Master Security Passcode", type="password", key="passcode_field")
+        unlock_clicked = st.button("🔓 Unlock Dashboard", type="primary", use_container_width=True)
+        
+        if unlock_clicked or (entered_pass and entered_pass.strip() != ""):
+            if entered_pass.strip() == master_passcode:
+                st.session_state["authenticated"] = True
+                st.success("✅ Access Granted! Unlocking Dashboard...")
+                st.rerun()
+            elif entered_pass.strip() != "":
+                st.error("❌ Invalid Passcode. Access Denied.")
+                
+    st.markdown("---")
+    st.markdown("<p style='text-align:center; color:#64748b; font-size:0.8rem;'>🔒 Encrypted Master Passcode Protection Active.</p>", unsafe_allow_html=True)
+    return False
+
+# Enforce security gate before rendering application content
+if not check_password():
+    st.stop()
+
+
 # ─── Custom CSS Styling ───────────────────────────────────────────────────────
 
 st.markdown("""
@@ -113,6 +179,9 @@ st.markdown("""
 with st.sidebar:
     st.markdown("### 👑 **BILLIONAIRE SCRIPT**")
     st.caption("Designed & Created by **Noeman NK**")
+    if st.button("🔒 **Lock App / Logout**", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.rerun()
     st.markdown("---")
     
     # Mode selector
