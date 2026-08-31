@@ -4,30 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>👑 BILLIONAIRE SCRIPT by Noeman NK</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body {
             background-color: #0f172a;
             color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-        iframe {
+        .portal-card {
+            background: linear-gradient(135deg, #111827 0%, #1e1b4b 100%);
+            border: 1px solid #6366f1;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 500px;
             width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
         }
+        h1 { font-size: 2rem; font-weight: 800; color: #f8fafc; margin-bottom: 6px; }
+        p.sub { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 20px; }
+        .pass-badge {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #fde047;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: inline-block;
+        }
+        .btn-launch {
+            display: block;
+            width: 100%;
+            background: linear-gradient(90deg, #4f46e5, #3b82f6);
+            color: white;
+            padding: 14px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 12px;
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+        }
+        .btn-launch:hover { opacity: 0.9; }
     </style>
-    <script>
-        // Directly navigate to main live dashboard
-        window.location.replace("http://localhost:8501");
-    </script>
 </head>
 <body>
-    <iframe src="http://localhost:8501" title="👑 BILLIONAIRE SCRIPT Dashboard by Noeman NK"></iframe>
+    <div class="portal-card">
+        <h1>👑 BILLIONAIRE SCRIPT</h1>
+        <p class="sub">Designed & Created by <b>Noeman NK</b></p>
+        <div class="pass-badge">🔑 Master Passcode: 1919</div>
+        
+        <a href="http://localhost:8501" id="launchBtn" class="btn-launch">🔓 Open Live Scanner Dashboard</a>
+        <p style="color:#94a3b8; font-size:0.8rem; margin-top:15px;">🔒 Password Protected Institutional Engine</p>
+    </div>
+
+    <script>
+        // Check if server is reachable and auto-redirect
+        fetch("http://localhost:8501")
+            .then(res => {
+                if(res.ok) window.location.href = "http://localhost:8501";
+            })
+            .catch(err => {
+                console.log("Local server starting or on mobile.");
+            });
+    </script>
 </body>
 </html>
