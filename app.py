@@ -29,6 +29,7 @@ from chart_patterns import scan_all_chart_patterns, scan_chart_patterns_for_tick
 from trade_chart_patterns import scan_all_trade_charts, scan_trade_chart_for_ticker, get_pattern_svg
 from institutional_alerts import scan_all_institutional_alerts, scan_institutional_alert_for_ticker
 from blackrock_quant_engine import analyze_quant_index, QUANT_INDICES
+from market_news_catalyst import fetch_all_market_catalysts, fetch_stock_catalyst_news
 from pdf_generator import generate_pdf_report
 
 # Configure logging
@@ -114,59 +115,100 @@ if not check_password():
 
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+    
+    * { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; }
+    
+    /* Apple Liquid Glass Canvas */
+    .stApp {
+        background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%) !important;
+        background-attachment: fixed !important;
+    }
+    
+    /* Ultra Liquid Glass Header */
     .main-header {
-        background: linear-gradient(90deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
-        padding: 22px;
-        border-radius: 16px;
-        border: 1px solid #6366f1;
-        margin-bottom: 20px;
-        text-align: center;
+        background: rgba(30, 27, 75, 0.45) !important;
+        backdrop-filter: blur(28px) saturate(190%) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+        padding: 26px 30px !important;
+        border-radius: 24px !important;
+        border: 1px solid rgba(99, 102, 241, 0.35) !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+        margin-bottom: 24px !important;
+        text-align: center !important;
     }
     .main-title {
-        font-size: 2.3rem;
-        font-weight: 800;
-        color: #F8FAFC;
-        letter-spacing: 1px;
-        margin: 0;
+        font-size: 2.5rem !important;
+        font-weight: 800 !important;
+        background: linear-gradient(135deg, #F8FAFC 0%, #A5B4FC 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        letter-spacing: -0.5px !important;
+        margin: 0 !important;
     }
     .sub-title {
-        font-size: 1.02rem;
-        color: #A5B4FC;
-        margin-top: 6px;
+        font-size: 1.05rem !important;
+        color: #C7D2FE !important;
+        margin-top: 8px !important;
+        font-weight: 500 !important;
     }
+    
+    /* Liquid Glass Metric Cards */
     .metric-card {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        padding: 16px;
-        border-radius: 12px;
-        text-align: center;
-        border: 1px solid #334155;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        padding: 20px !important;
+        border-radius: 20px !important;
+        text-align: center !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .metric-card:hover {
+        transform: translateY(-4px) !important;
+        border-color: rgba(99, 102, 241, 0.5) !important;
+        box-shadow: 0 16px 40px rgba(99, 102, 241, 0.25) !important;
     }
     .metric-value {
-        font-size: 2.2rem;
-        font-weight: 800;
-        margin: 0;
+        font-size: 2.4rem !important;
+        font-weight: 800 !important;
+        margin: 0 !important;
+        letter-spacing: -1px !important;
     }
     .metric-label {
-        font-size: 0.85rem;
-        opacity: 0.85;
-        margin-top: 4px;
-        font-weight: 600;
+        font-size: 0.88rem !important;
+        color: #94A3B8 !important;
+        margin-top: 6px !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
     }
-    .index-card {
-        background: linear-gradient(135deg, #1e1b4b 0%, #172554 100%);
-        padding: 16px;
-        border-radius: 12px;
-        border: 1px solid #3b82f6;
-        margin-bottom: 12px;
+    
+    /* Liquid Glass Pattern & Index Cards */
+    .pattern-card, .index-card {
+        background: rgba(15, 23, 42, 0.65) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        padding: 22px !important;
+        border-radius: 22px !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        margin-bottom: 18px !important;
+        transition: all 0.3s ease !important;
     }
-    .pattern-card {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        padding: 16px;
-        border-radius: 12px;
-        border: 1px solid #10b981;
-        margin-bottom: 14px;
+    .pattern-card:hover, .index-card:hover {
+        border-color: rgba(56, 189, 248, 0.4) !important;
+        box-shadow: 0 18px 45px rgba(56, 189, 248, 0.2) !important;
     }
+    
+    /* Apple iOS-style Buttons */
+    .stButton > button {
+        border-radius: 14px !important;
+        font-weight: 700 !important;
+        padding: 10px 20px !important;
+        backdrop-filter: blur(16px) !important;
+        transition: all 0.25s ease !important;
+    }
+    
     .strong-bull { color: #22C55E; }
     .moderate-bull { color: #86EFAC; }
     .neutral { color: #94A3B8; }
@@ -585,10 +627,11 @@ st.markdown("""
 
 # ─── Primary Tabs ─────────────────────────────────────────────────────────────
 
-tab_indices, tab_blackrock, tab_adv_alerts, tab_trade_chart, tab_patterns, tab_movers, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
+tab_indices, tab_blackrock, tab_adv_alerts, tab_news, tab_trade_chart, tab_patterns, tab_movers, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
     "🏛️ NSE Major Indices (NIFTY 50 & SENSEX)",
     "🔮 BLACKROCK QUANT ENGINE (NIFTY & SENSEX)",
     "⚡ ADVANCED REAL-TIME ALERTS (Pre-Move Signals)",
+    "📰 IMPACT NEWS ALERTS & CATALYST INTELLIGENCE",
     "📈 TRADE CHART (Reversals, Continuations & Triangles)",
     "📐 Institutional Chart Patterns (Pre-Breakouts)",
     "🚀 Next-Day Movers (+3% to +20% / -3% to -20%)",
@@ -1042,7 +1085,136 @@ with tab_adv_alerts:
         st.info("No stocks currently meet strict institutional pre-move alert criteria in this scan. Click 'Scan Advanced Alerts' to run again.")
 
 
-# ─── TAB 4: TRADE CHART — Institutional Price Action Setups ─────────────────
+# ─── TAB 4: IMPACT NEWS ALERTS & CATALYST INTELLIGENCE ─────────────────────
+
+with tab_news:
+    st.markdown("### 📰 IMPACT NEWS ALERTS & CATALYST INTELLIGENCE — Pre-Market Corporate Disclosures")
+    st.markdown("""
+    Scans real-time Indian stock market announcements (**Order Wins, Mergers & Acquisitions, Regulatory Clearances, Earnings Surprises**) and calculates forecasted **Next-Day Price Reactions & High-Convexity Option Strikes**.
+    """)
+    
+    col_nw_univ, col_nw_btn = st.columns([3, 1])
+    with col_nw_univ:
+        nw_universe = st.selectbox(
+            "🌐 **News Target Universe**",
+            ["⚡ Top 50 F&O Stocks (High Impact)", "📊 Full 200 F&O Universe"],
+            key="nw_univ_select"
+        )
+    with col_nw_btn:
+        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+        run_nw_scan = st.button("🚀 **Scan News Catalysts**", use_container_width=True, type="primary")
+        
+    if run_nw_scan or 'news_catalyst_df' not in st.session_state:
+        target_nw_tickers = get_nifty200_tickers() if "200" in nw_universe else get_nifty50_tickers()
+        
+        prog_nw = st.progress(0)
+        status_nw = st.empty()
+        
+        def update_nw_prog(curr, tot, name):
+            prog_nw.progress(curr / tot)
+            status_nw.text(f"Scanning News Catalysts ({curr}/{tot}): {name}")
+            
+        with st.spinner(f"Analyzing Corporate Announcements for {len(target_nw_tickers)} stocks..."):
+            nw_df = fetch_all_market_catalysts(target_nw_tickers, progress_callback=update_nw_prog)
+            st.session_state['news_catalyst_df'] = nw_df
+            
+        prog_nw.empty()
+        status_nw.empty()
+    else:
+        nw_df = st.session_state.get('news_catalyst_df', pd.DataFrame())
+        
+    if not nw_df.empty:
+        col_nw_cnt, col_nw_pdf = st.columns([3, 1])
+        with col_nw_cnt:
+            st.markdown(f"#### 📰 Corporate Catalysts & News Intimations: **{len(nw_df)} Tracked**")
+        with col_nw_pdf:
+            pdf_nw_bytes = generate_pdf_report(
+                nw_df,
+                title="Impact News Alerts & Catalyst Intelligence",
+                subtitle="Pre-Market Reaction Forecasts",
+                mode="Daily",
+                universe=nw_universe
+            )
+            st.download_button(
+                label="📄 **Download News Catalyst PDF**",
+                data=pdf_nw_bytes,
+                file_name=f"News_Catalysts_Report_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+        # Filter tabs
+        nw_tab_all, nw_tab_orders, nw_tab_ma, nw_tab_reg, nw_tab_earn = st.tabs([
+            f"⚡ All News Catalysts ({len(nw_df)})",
+            f"🤝 Order Wins ({len(nw_df[nw_df['Catalyst_Type'].str.contains('Order', na=False)])})",
+            f"💎 M&A Deals ({len(nw_df[nw_df['Catalyst_Type'].str.contains('Merger', na=False)])})",
+            f"🏛️ Regulatory Clearances ({len(nw_df[nw_df['Catalyst_Type'].str.contains('Regulatory', na=False)])})",
+            f"📊 Earnings & Guidance ({len(nw_df[nw_df['Catalyst_Type'].str.contains('Earnings', na=False)])})"
+        ])
+        
+        def render_news_table(df_n, cat_label: str = "News Catalysts"):
+            if df_n.empty:
+                st.info(f"No active catalysts in {cat_label} currently.")
+                return
+                
+            nw_display_cols = [
+                'Ticker', 'Name', 'Catalyst_Type', 'Headline', 'Next_Day_Forecast', 'Direction', 'Option_Strike', 'Publisher', 'Publish_Time'
+            ]
+            available_nw = [c for c in nw_display_cols if c in df_n.columns]
+            
+            styled_nw = df_n[available_nw].style \
+                .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BUY' in str(v) else ('color: #EF4444; font-weight: bold;' if 'SELL' in str(v) else ''), subset=['Direction'] if 'Direction' in available_nw else []) \
+                .map(lambda v: 'color: #FBBF24; font-weight: bold;' if 'GAP-UP' in str(v) else 'color: #38BDF8;', subset=['Next_Day_Forecast'] if 'Next_Day_Forecast' in available_nw else [])
+                
+            st.dataframe(styled_nw, use_container_width=True, height=380)
+            
+        with nw_tab_all: render_news_table(nw_df, "All News Catalysts")
+        with nw_tab_orders: render_news_table(nw_df[nw_df['Catalyst_Type'].str.contains('Order', na=False)], "Order Wins")
+        with nw_tab_ma: render_news_table(nw_df[nw_df['Catalyst_Type'].str.contains('Merger', na=False)], "M&A Deals")
+        with nw_tab_reg: render_news_table(nw_df[nw_df['Catalyst_Type'].str.contains('Regulatory', na=False)], "Regulatory Clearances")
+        with nw_tab_earn: render_news_table(nw_df[nw_df['Catalyst_Type'].str.contains('Earnings', na=False)], "Earnings Surprises")
+        
+        st.markdown("---")
+        st.markdown("#### 🔍 Interactive News Catalyst Inspector Card")
+        nw_ticker_list = nw_df['Ticker'].tolist()
+        sel_nw_ticker = st.selectbox("Select Catalyst Stock to Inspect:", nw_ticker_list, key="nw_select_stock")
+        
+        if sel_nw_ticker:
+            matched_nw = nw_df[nw_df['Ticker'] == sel_nw_ticker].iloc[0].to_dict()
+            
+            st.markdown(f"""
+            <div class="pattern-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:1.2rem; font-weight:800; color:#F8FAFC;">📰 {matched_nw['Headline']}</span>
+                    <span style="font-size:1.0rem; font-weight:700; color:#FDE047;">{matched_nw['Catalyst_Type']}</span>
+                </div>
+                <hr style="margin: 8px 0; border-color: #334155;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px;">
+                    <div>
+                        <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Stock Name:</b> {matched_nw['Name']} ({matched_nw['Ticker']})</p>
+                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Spot Price:</b> ₹{matched_nw['Current_Price']:.2f} ({matched_nw['Change%']:+.2f}%)</p>
+                        <p style="color:#A5B4FC; margin:2px 0; font-size:0.85rem;"><b>Disclosed By:</b> {matched_nw['Publisher']}</p>
+                    </div>
+                    <div>
+                        <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Forecasted Reaction:</b> {matched_nw['Next_Day_Forecast']}</p>
+                        <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Direction:</b> {matched_nw['Direction']}</p>
+                        <p style="color:#F472B6; margin:2px 0; font-size:0.85rem;"><b>Option Strike Play:</b> {matched_nw['Option_Strike']}</p>
+                    </div>
+                    <div>
+                        <p style="color:#94A3B8; margin:2px 0; font-size:0.85rem;"><b>Publish Time:</b> {matched_nw['Publish_Time']}</p>
+                        <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Conviction:</b> {matched_nw['Conviction']}</p>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            with st.spinner(f"Loading chart for {sel_nw_ticker}..."):
+                df_chart_nw, _, _, _ = fetch_stock_data_realtime(sel_nw_ticker, period='1y')
+                if df_chart_nw is not None and not df_chart_nw.empty:
+                    create_chart_pattern_chart(df_chart_nw, {'Trigger_Entry': matched_nw['Current_Price']}, title=f"{sel_nw_ticker} — Catalyst Impact Chart")
+
+
+# ─── TAB 5: TRADE CHART — Institutional Price Action Setups ─────────────────
 
 with tab_trade_chart:
     st.markdown("### 📈 TRADE CHART — Institutional Price Action Setups (15m, 1h, Daily, Weekly)")
