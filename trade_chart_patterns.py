@@ -25,6 +25,7 @@ import threading
 from indicators import compute_all_indicators
 from stock_universe import get_stock_info, get_nifty500_tickers, get_nifty50_tickers, get_nifty200_tickers
 from scanner import fetch_stock_data_realtime
+from unified_consensus import calculate_unified_consensus
 
 logger = logging.getLogger(__name__)
 
@@ -643,7 +644,13 @@ def scan_trade_chart_for_ticker(ticker: str, timeframe: str = '1-Hour') -> Optio
         chg_pct = ((rt_price - prev_close) / prev_close) * 100 if prev_close > 0 else 0.0
         df = compute_all_indicators(df)
         
-        return detect_trade_chart_pattern(df, ticker, name, rt_price=rt_price, prev_close=prev_close, chg_pct=chg_pct, timeframe=timeframe)
+        res = detect_trade_chart_pattern(df, ticker, name, rt_price=rt_price, prev_close=prev_close, chg_pct=chg_pct, timeframe=timeframe)
+        if res:
+            consensus = calculate_unified_consensus(df, ticker, pattern_setup=res, timeframe=timeframe)
+            if not consensus['is_aligned']:
+                return None
+            res['Conviction'] = f"{consensus['conviction_score']}% ({consensus['master_direction']} Harmonized)"
+        return res
     except Exception as e:
         logger.debug(f"Error scanning Trade Chart pattern for {ticker}: {e}")
         return None
