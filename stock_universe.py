@@ -146,10 +146,8 @@ def get_stock_info(ticker: str) -> Dict[str, str]:
 def get_available_universes() -> Dict[str, str]:
     """Returns available stock universes."""
     return {
-        '⚡ Top 50 F&O Stocks (NIFTY 50)': 'nifty50',
-        '📊 Full 200 F&O Universe (NIFTY 200)': 'fno',
-        '🌐 Full 500 Universe (NIFTY 500)': 'nifty500',
-        'NIFTY 50': 'nifty50',
+        '📊 Full 200 F&O Universe': 'fno',
+        '🌐 Full 500 Broad Market Universe': 'nifty500',
         'NIFTY 200': 'nifty200',
         'NIFTY 500': 'nifty500'
     }

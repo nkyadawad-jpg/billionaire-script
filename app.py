@@ -115,104 +115,118 @@ if not check_password():
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
     
-    * { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; }
+    * { font-family: 'Outfit', 'JetBrains Mono', -apple-system, sans-serif; }
     
-    /* Apple Liquid Glass Canvas */
+    /* Cyber Dark Matrix Canvas */
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%) !important;
+        background: #030712 !important;
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+            radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%) !important;
         background-attachment: fixed !important;
     }
     
-    /* Ultra Liquid Glass Header */
+    /* Sci-Fi Cyber Glass Header */
     .main-header {
-        background: rgba(30, 27, 75, 0.45) !important;
-        backdrop-filter: blur(28px) saturate(190%) !important;
-        -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-        padding: 26px 30px !important;
-        border-radius: 24px !important;
-        border: 1px solid rgba(99, 102, 241, 0.35) !important;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+        background: rgba(9, 14, 28, 0.85) !important;
+        backdrop-filter: blur(24px) saturate(200%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+        padding: 28px 34px !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(0, 240, 255, 0.3) !important;
+        box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
         margin-bottom: 24px !important;
         text-align: center !important;
+        position: relative !important;
     }
     .main-title {
-        font-size: 2.5rem !important;
+        font-size: 2.6rem !important;
         font-weight: 800 !important;
-        background: linear-gradient(135deg, #F8FAFC 0%, #A5B4FC 100%) !important;
+        background: linear-gradient(90deg, #00F0FF 0%, #7C3AED 50%, #10B981 100%) !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
-        letter-spacing: -0.5px !important;
+        letter-spacing: 0.5px !important;
         margin: 0 !important;
+        text-transform: uppercase !important;
     }
     .sub-title {
-        font-size: 1.05rem !important;
-        color: #C7D2FE !important;
+        font-size: 0.95rem !important;
+        color: #94A3B8 !important;
         margin-top: 8px !important;
-        font-weight: 500 !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        letter-spacing: 1px !important;
     }
     
-    /* Liquid Glass Metric Cards */
+    /* High-Tech Glowing Metric HUD Cards */
     .metric-card {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(20px) saturate(180%) !important;
-        padding: 20px !important;
-        border-radius: 20px !important;
+        background: rgba(15, 23, 42, 0.75) !important;
+        backdrop-filter: blur(18px) !important;
+        padding: 22px !important;
+        border-radius: 16px !important;
         text-align: center !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(56, 189, 248, 0.25) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .metric-card:hover {
-        transform: translateY(-4px) !important;
-        border-color: rgba(99, 102, 241, 0.5) !important;
-        box-shadow: 0 16px 40px rgba(99, 102, 241, 0.25) !important;
+        transform: translateY(-4px) scale(1.02) !important;
+        border-color: #00F0FF !important;
+        box-shadow: 0 0 25px rgba(0, 240, 255, 0.35) !important;
     }
     .metric-value {
-        font-size: 2.4rem !important;
+        font-size: 2.5rem !important;
         font-weight: 800 !important;
+        font-family: 'JetBrains Mono', monospace !important;
         margin: 0 !important;
-        letter-spacing: -1px !important;
     }
     .metric-label {
-        font-size: 0.88rem !important;
+        font-size: 0.82rem !important;
         color: #94A3B8 !important;
         margin-top: 6px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
+        letter-spacing: 1px !important;
     }
     
-    /* Liquid Glass Pattern & Index Cards */
+    /* Cyber Glass Pattern & Inspector Cards */
     .pattern-card, .index-card {
-        background: rgba(15, 23, 42, 0.65) !important;
-        backdrop-filter: blur(24px) saturate(180%) !important;
-        padding: 22px !important;
-        border-radius: 22px !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-        margin-bottom: 18px !important;
+        background: rgba(11, 19, 43, 0.85) !important;
+        backdrop-filter: blur(20px) !important;
+        padding: 24px !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(139, 92, 246, 0.3) !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 15px rgba(139, 92, 246, 0.1) !important;
+        margin-bottom: 20px !important;
         transition: all 0.3s ease !important;
     }
     .pattern-card:hover, .index-card:hover {
-        border-color: rgba(56, 189, 248, 0.4) !important;
-        box-shadow: 0 18px 45px rgba(56, 189, 248, 0.2) !important;
+        border-color: #00F0FF !important;
+        box-shadow: 0 0 30px rgba(0, 240, 255, 0.25) !important;
     }
     
-    /* Apple iOS-style Buttons */
+    /* High-Tech Cyber Buttons */
     .stButton > button {
-        border-radius: 14px !important;
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(124, 58, 237, 0.3) 100%) !important;
+        border: 1px solid rgba(56, 189, 248, 0.4) !important;
+        color: #F8FAFC !important;
+        border-radius: 12px !important;
         font-weight: 700 !important;
-        padding: 10px 20px !important;
-        backdrop-filter: blur(16px) !important;
+        letter-spacing: 0.5px !important;
         transition: all 0.25s ease !important;
     }
+    .stButton > button:hover {
+        border-color: #00F0FF !important;
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.4) !important;
+        background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(124, 58, 237, 0.5) 100%) !important;
+    }
     
-    .strong-bull { color: #22C55E; }
-    .moderate-bull { color: #86EFAC; }
+    .strong-bull { color: #10B981; }
+    .moderate-bull { color: #34D399; }
     .neutral { color: #94A3B8; }
-    .moderate-bear { color: #FCA5A5; }
+    .moderate-bear { color: #F87171; }
     .strong-bear { color: #EF4444; }
 </style>
 """, unsafe_allow_html=True)
@@ -627,14 +641,13 @@ st.markdown("""
 
 # ─── Primary Tabs ─────────────────────────────────────────────────────────────
 
-tab_indices, tab_blackrock, tab_adv_alerts, tab_news, tab_trade_chart, tab_patterns, tab_movers, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
+tab_indices, tab_blackrock, tab_adv_alerts, tab_news, tab_trade_chart, tab_patterns, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
     "🏛️ NSE Major Indices (NIFTY 50 & SENSEX)",
     "🔮 BLACKROCK QUANT ENGINE (NIFTY & SENSEX)",
     "⚡ ADVANCED REAL-TIME ALERTS (Pre-Move Signals)",
     "📰 IMPACT NEWS ALERTS & CATALYST INTELLIGENCE",
     "📈 TRADE CHART (Reversals, Continuations & Triangles)",
     "📐 Institutional Chart Patterns (Pre-Breakouts)",
-    "🚀 Next-Day Movers (+3% to +20% / -3% to -20%)",
     "🎯 F&O Trade Setups (R:R & Time)",
     "🌊 Elliott Wave (Weekly + Daily)",
     "🐂 Bull Stocks (with R:R)",
@@ -1576,114 +1589,7 @@ with tab_patterns:
         st.info("No stocks currently meet strict pattern compression criteria in this scan. Click 'Scan Chart Patterns' to run again.")
 
 
-# ─── TAB 3: Next-Day Movers (+3% to +20% / -3% to -20%) ───────────────────────
-
-with tab_movers:
-    st.markdown("### 🚀 Next-Day High-Velocity Movers: 🟢 +3% to +20% Bull & 🔴 -3% to -20% Bear")
-    st.markdown(r"""
-    Detects stocks with highest probability of explosive momentum in the very next session:
-    - 🟢 **Bullish Breakouts**: Expected **$\ge +3.0\%$ to $+20.0\%$**
-    - 🔴 **Bearish Breakdowns**: Expected **$\le -3.0\%$ to $-20.0\%$**
-    - **Core Triggers**: NR7 Compression, Extreme Bollinger Band Squeeze, Institutional RVOL Spike & EMA Pinch.
-    """)
-    
-    col_m1, col_m2 = st.columns([3, 1])
-    with col_m2:
-        run_mover_scan = st.button("🚀 **Re-Scan Next-Day Movers**", use_container_width=True)
-        
-    if run_mover_scan or 'next_day_movers_df' not in st.session_state:
-        sample_tickers = get_nifty50_tickers()
-        with st.spinner("Scanning for NR7, Bollinger Squeezes, RVOL surges & Breakout Triggers..."):
-            movers_df = scan_next_day_movers(sample_tickers)
-            st.session_state['next_day_movers_df'] = movers_df
-    else:
-        movers_df = st.session_state.get('next_day_movers_df', pd.DataFrame())
-        
-    if not movers_df.empty:
-        col_m_cnt, col_m_pdf = st.columns([3, 1])
-        with col_m_cnt:
-            st.markdown(f"#### ⚡ Active Next-Day Movers ({len(movers_df)} Found)")
-        with col_m_pdf:
-            pdf_mover_bytes = generate_pdf_report(
-                movers_df,
-                title="Next-Day 3% to 20% Velocity Movers Master Report",
-                subtitle="Expected Move: Next 1 Session",
-                mode="Daily",
-                universe="NSE Top Stocks"
-            )
-            st.download_button(
-                label="📄 **Download All Movers PDF**",
-                data=pdf_mover_bytes,
-                file_name=f"NextDay_Movers_Master_{int(time.time())}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-            
-        mover_tab_all, mover_tab_bull, mover_tab_bear = st.tabs([
-            f"⚡ All Movers ({len(movers_df)})",
-            f"🟢 Bullish +3% to +20% ({len(movers_df[movers_df['Type'].str.contains('BULL', na=False)])})",
-            f"🔴 Bearish -3% to -20% ({len(movers_df[movers_df['Type'].str.contains('BEAR', na=False)])})"
-        ])
-        
-        def render_mover_table(df_to_render, cat_label: str = "Movers"):
-            if df_to_render.empty:
-                st.info(f"No candidates in {cat_label} currently.")
-                return
-                
-            col_mv_btn1, col_mv_btn2 = st.columns([3, 1])
-            with col_mv_btn2:
-                pdf_sub_mover = generate_pdf_report(
-                    df_to_render,
-                    title=f"Next-Day Movers — {cat_label}",
-                    subtitle="Expected Move: Next 1 Session",
-                    mode="Daily",
-                    universe="NSE Universe"
-                )
-                st.download_button(
-                    label=f"📄 **Download {cat_label} PDF**",
-                    data=pdf_sub_mover,
-                    file_name=f"{cat_label.replace(' ', '_')}_{int(time.time())}.pdf",
-                    mime="application/pdf",
-                    key=f"btn_pdf_mover_{cat_label}_{time.time()}",
-                    use_container_width=True
-                )
-                
-            display_m = df_to_render.copy()
-            rename_cols = {
-                'Trigger_Entry': 'Trigger Entry',
-                'Stop_Loss': 'SL',
-                'Target_1_4Pct': 'T1 (Target)',
-                'Target_2_7Pct': 'T2 (Runner)',
-                'Expected_Move': 'Expected Move',
-                'Risk_Reward': 'R:R',
-                'Time_Cycle': 'Time Cycle',
-                'Setup_Pattern': 'Setup Pattern'
-            }
-            display_m = display_m.rename(columns={k: v for k, v in rename_cols.items() if k in display_m.columns})
-            
-            styled = display_m.style \
-                .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BULL' in str(v) else ('color: #EF4444; font-weight: bold;' if 'BEAR' in str(v) else ''), subset=['Direction'] if 'Direction' in display_m.columns else []) \
-                .map(lambda v: 'color: #FBBF24; font-weight: bold;', subset=['Probability'] if 'Probability' in display_m.columns else []) \
-                .format({
-                    'Current_Price': '₹{:.2f}',
-                    'Trigger Entry': '₹{:.2f}',
-                    'SL': '₹{:.2f}',
-                    'T1 (Target)': '₹{:.2f}',
-                    'T2 (Runner)': '₹{:.2f}'
-                }, na_rep='—')
-                
-            st.dataframe(styled, use_container_width=True, height=380)
-            
-        with mover_tab_all: render_mover_table(movers_df)
-        with mover_tab_bull: render_mover_table(movers_df[movers_df['Type'].str.contains('BULL', na=False)])
-        with mover_tab_bear: render_mover_table(movers_df[movers_df['Type'].str.contains('BEAR', na=False)])
-        
-        st.caption("📌 **Execution Protocol**: Enter when the stock crosses the **Trigger Entry** level with 5-min candle confirmation. Stick strictly to the Stop Loss.")
-    else:
-        st.info("💡 No stocks currently meet the extreme compression criteria. Click 'Re-Scan Next-Day Movers' to check again.")
-
-
-# ─── TAB 4: F&O Trade Setups with R:R & Time Cycle ────────────────────────────
+# ─── TAB 7: F&O Trade Setups with R:R & Time Cycle ────────────────────────────
 
 with tab_trades:
     st.markdown(f"### 🎯 F&O Active Trade Setups with R:R & Time Cycle ({mode} Mode)")
