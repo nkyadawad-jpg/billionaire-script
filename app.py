@@ -115,63 +115,59 @@ if not check_password():
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=SF+Pro+Display:wght@400;600;700;800&display=swap');
     
-    * { font-family: 'Inter', 'Outfit', -apple-system, sans-serif; }
+    * { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; }
     
-    /* Ultra Rich FinTech Canvas */
+    /* Apple Liquid Glass Canvas */
     .stApp {
-        background: #0B0F19 !important;
-        background-image: 
-            radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
-            radial-gradient(at 50% 100%, rgba(56, 189, 248, 0.08) 0px, transparent 50%) !important;
+        background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%) !important;
         background-attachment: fixed !important;
     }
     
-    /* FinTech Glass Header */
+    /* Ultra Liquid Glass Header */
     .main-header {
-        background: rgba(17, 24, 39, 0.75) !important;
-        backdrop-filter: blur(28px) saturate(200%) !important;
-        -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
-        padding: 28px 36px !important;
-        border-radius: 24px !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+        background: rgba(30, 27, 75, 0.45) !important;
+        backdrop-filter: blur(32px) saturate(200%) !important;
+        -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+        padding: 28px 34px !important;
+        border-radius: 26px !important;
+        border: 1px solid rgba(99, 102, 241, 0.4) !important;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
         margin-bottom: 24px !important;
         text-align: center !important;
     }
     .main-title {
         font-size: 2.6rem !important;
         font-weight: 800 !important;
-        background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, #38BDF8 100%) !important;
+        background: linear-gradient(135deg, #FFFFFF 0%, #FDE047 50%, #38BDF8 100%) !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
         letter-spacing: -0.5px !important;
         margin: 0 !important;
     }
     .sub-title {
-        font-size: 0.98rem !important;
-        color: #94A3B8 !important;
+        font-size: 1.02rem !important;
+        color: #C7D2FE !important;
         margin-top: 8px !important;
         font-weight: 500 !important;
     }
     
-    /* FinTech Glass Metric Cards */
+    /* Liquid Glass Metric Cards */
     .metric-card {
-        background: rgba(17, 24, 39, 0.75) !important;
-        backdrop-filter: blur(20px) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
         padding: 22px !important;
-        border-radius: 20px !important;
+        border-radius: 22px !important;
         text-align: center !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .metric-card:hover {
         transform: translateY(-4px) !important;
-        border-color: rgba(56, 189, 248, 0.4) !important;
-        box-shadow: 0 20px 40px rgba(56, 189, 248, 0.2) !important;
+        border-color: rgba(99, 102, 241, 0.6) !important;
+        box-shadow: 0 20px 45px rgba(99, 102, 241, 0.3) !important;
     }
     .metric-value {
         font-size: 2.5rem !important;
@@ -180,7 +176,7 @@ st.markdown("""
         letter-spacing: -1px !important;
     }
     .metric-label {
-        font-size: 0.85rem !important;
+        font-size: 0.88rem !important;
         color: #94A3B8 !important;
         margin-top: 6px !important;
         font-weight: 600 !important;
@@ -188,43 +184,43 @@ st.markdown("""
         letter-spacing: 0.5px !important;
     }
     
-    /* FinTech Cards */
+    /* Liquid Glass Pattern Cards */
     .pattern-card, .index-card {
-        background: rgba(17, 24, 39, 0.8) !important;
-        backdrop-filter: blur(24px) !important;
+        background: rgba(15, 23, 42, 0.7) !important;
+        backdrop-filter: blur(28px) saturate(190%) !important;
         padding: 24px !important;
-        border-radius: 22px !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45) !important;
+        border-radius: 24px !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
         margin-bottom: 20px !important;
         transition: all 0.3s ease !important;
     }
     .pattern-card:hover, .index-card:hover {
-        border-color: rgba(16, 185, 129, 0.4) !important;
-        box-shadow: 0 20px 50px rgba(16, 185, 129, 0.2) !important;
+        border-color: rgba(56, 189, 248, 0.5) !important;
+        box-shadow: 0 22px 55px rgba(56, 189, 248, 0.25) !important;
     }
     
-    /* FinTech Gradient Buttons */
+    /* Apple Liquid Glass Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%) !important;
-        border: none !important;
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(59, 130, 246, 0.8) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
         color: #FFFFFF !important;
-        border-radius: 14px !important;
+        border-radius: 16px !important;
         font-weight: 700 !important;
-        padding: 10px 22px !important;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35) !important;
+        padding: 12px 24px !important;
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4) !important;
+        backdrop-filter: blur(20px) !important;
         transition: all 0.25s ease !important;
     }
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5) !important;
-        opacity: 0.95 !important;
+        box-shadow: 0 10px 30px rgba(79, 70, 229, 0.6) !important;
     }
     
-    .strong-bull { color: #10B981; }
-    .moderate-bull { color: #34D399; }
+    .strong-bull { color: #22C55E; }
+    .moderate-bull { color: #86EFAC; }
     .neutral { color: #94A3B8; }
-    .moderate-bear { color: #F87171; }
+    .moderate-bear { color: #FCA5A5; }
     .strong-bear { color: #EF4444; }
 </style>
 """, unsafe_allow_html=True)
