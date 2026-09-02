@@ -27,6 +27,8 @@ from next_day_mover import scan_next_day_movers
 from index_elliott import scan_all_nse_indices, analyze_single_index, NSE_INDICES
 from chart_patterns import scan_all_chart_patterns, scan_chart_patterns_for_ticker
 from trade_chart_patterns import scan_all_trade_charts, scan_trade_chart_for_ticker, get_pattern_svg
+from institutional_alerts import scan_all_institutional_alerts, scan_institutional_alert_for_ticker
+from blackrock_quant_engine import analyze_quant_index, QUANT_INDICES
 from pdf_generator import generate_pdf_report
 
 # Configure logging
@@ -583,8 +585,10 @@ st.markdown("""
 
 # ─── Primary Tabs ─────────────────────────────────────────────────────────────
 
-tab_indices, tab_trade_chart, tab_patterns, tab_movers, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
+tab_indices, tab_blackrock, tab_adv_alerts, tab_trade_chart, tab_patterns, tab_movers, tab_trades, tab_ew, tab_bull, tab_bear, tab_all, tab_search = st.tabs([
     "🏛️ NSE Major Indices (NIFTY 50 & SENSEX)",
+    "🔮 BLACKROCK QUANT ENGINE (NIFTY & SENSEX)",
+    "⚡ ADVANCED REAL-TIME ALERTS (Pre-Move Signals)",
     "📈 TRADE CHART (Reversals, Continuations & Triangles)",
     "📐 Institutional Chart Patterns (Pre-Breakouts)",
     "🚀 Next-Day Movers (+3% to +20% / -3% to -20%)",
@@ -712,7 +716,333 @@ with tab_indices:
         st.info("Unable to fetch indices data. Please check connection.")
 
 
-# ─── TAB 2: TRADE CHART — Institutional Price Action Setups ─────────────────
+# ─── TAB 2: BLACKROCK QUANT ENGINE (NIFTY 50 & SENSEX) ──────────────────────
+
+with tab_blackrock:
+    st.markdown("### 🔮 BLACKROCK QUANT ENGINE — NIFTY 50 & SENSEX (>95% Conviction Trade Directives)")
+    st.markdown("""
+    Top 1% Wall Street & BlackRock Institutional Intelligence Engine combining **Multi-Timeframe Elliott Wave & Fibonacci Projections**, **Real-Time Option Chain Open Interest (OI) Analytics**, **4-Week Expiry Baskets**, and **Global Geopolitical Macro Signals**.
+    """)
+    
+    col_br_idx, col_br_tf, col_br_btn = st.columns([1.5, 1.5, 1])
+    with col_br_idx:
+        br_index = st.selectbox("🏛️ **Select Target Index**", ["NIFTY 50", "SENSEX"], key="br_index_select")
+    with col_br_tf:
+        br_timeframe = st.selectbox(
+            "⏱️ **Timeframe**",
+            ["15-Min (Intraday Scalp / Early Strike)", "1-Hour (Intraday / Swing Momentum)", "Daily (Swing Trend)", "Weekly (Positional Supercycle)"],
+            key="br_tf_select"
+        )
+    with col_br_btn:
+        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+        run_br_quant = st.button("🚀 **Run BlackRock Quant Scan**", use_container_width=True, type="primary")
+        
+    clean_br_tf = "15-Min" if "15-Min" in br_timeframe else ("1-Hour" if "1-Hour" in br_timeframe else ("Weekly" if "Weekly" in br_timeframe else "Daily"))
+    
+    if run_br_quant or 'blackrock_data' not in st.session_state or st.session_state.get('br_last_idx') != br_index or st.session_state.get('br_last_tf') != clean_br_tf:
+        with st.spinner(f"Running BlackRock Quantitative Pipeline for {br_index} ({clean_br_tf} Timeframe)..."):
+            br_data = analyze_quant_index(br_index, timeframe=clean_br_tf)
+            st.session_state['blackrock_data'] = br_data
+            st.session_state['br_last_idx'] = br_index
+            st.session_state['br_last_tf'] = clean_br_tf
+    else:
+        br_data = st.session_state.get('blackrock_data', {})
+        
+    if br_data:
+        # PDF Download Row
+        col_br_head, col_br_pdf = st.columns([3, 1])
+        with col_br_head:
+            st.markdown(f"#### 🏛️ {br_data['index_name']} — Live Spot: `₹{br_data['spot_price']:,.2f}` ({br_data['change_pct']:+.2f}%)")
+        with col_br_pdf:
+            # Format into DataFrame for PDF export
+            br_export_df = pd.DataFrame([{
+                'Ticker': br_data['index_name'],
+                'Name': f"{br_data['index_name']} Institutional Playbook",
+                'Close': br_data['spot_price'],
+                'Change%': br_data['change_pct'],
+                'Signal': 'BULLISH' if br_data['change_pct'] >= 0 else 'BEARISH',
+                'Timeframe': br_data['timeframe'],
+                'Wave_Stage': br_data['ew'].get('wave_phase', 'Impulse Extension'),
+                'Option_Action': br_data['option_directive'],
+                'Option_Expiry': br_data['oi']['weekly_1_expiry'] + " / " + br_data['oi']['monthly_expiry'],
+                'Option_Target_ROI': br_data['target_roi'],
+                'Option_SL': br_data['option_sl'],
+                'Trigger_Entry': br_data['spot_price'],
+                'Stop_Loss': br_data['ew'].get('invalidation_sl', 0.0),
+                'Target_1': br_data['ew'].get('target_1', 0.0),
+                'Target_2': br_data['ew'].get('target_2', 0.0),
+                'RR_Ratio': br_data['ew'].get('rr_ratio', '1:4.0'),
+                'Time_Cycle': br_data['ew'].get('holding_time', ''),
+                'Conviction': br_data['conviction'],
+                'Rationale': f"PCR: {br_data['oi']['pcr']} | Max Pain: ₹{br_data['oi']['max_pain']} | Global: {br_data['macro']['sentiment']}"
+            }])
+            pdf_br_bytes = generate_pdf_report(
+                br_export_df,
+                title=f"BlackRock Quant Report — {br_data['index_name']}",
+                subtitle=f"Timeframe: {br_data['timeframe']}",
+                mode=br_data['timeframe'],
+                universe="Premier Indian Indices"
+            )
+            st.download_button(
+                label="📄 **Download BlackRock Quant PDF**",
+                data=pdf_br_bytes,
+                file_name=f"BlackRock_Quant_{br_data['index_name'].replace(' ', '_')}_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+        # ─── Global Macro & Geopolitical Cues Banner ─────────────
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 14px 18px; border-radius: 12px; border: 1px solid #6366f1; margin-bottom: 15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                <span style="font-weight:800; font-size:1.05rem; color:#F8FAFC;">🌐 Global Macro & Liquidity Matrix: <span style="color:#FDE047;">{br_data['macro']['sentiment']}</span></span>
+                <span style="font-size:0.85rem; color:#A5B4FC;">S&P 500: {br_data['macro']['sp500_chg']:+.2f}% | Nasdaq: {br_data['macro']['nasdaq_chg']:+.2f}% | Crude: ${br_data['macro']['crude_price']} | DXY: {br_data['macro']['dxy_price']}</span>
+            </div>
+            <p style="color:#CBD5E1; font-size:0.85rem; margin:6px 0 0 0;">💡 <b>Institutional Flow Bias:</b> {br_data['macro']['fii_dii_bias']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # ─── Readymade >95% Conviction Trade Directive Spotlight ──
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 20px; border-radius: 14px; border: 2px solid #22C55E; margin-bottom: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+                <span style="font-size:1.3rem; font-weight:800; color:#F8FAFC;">🎯 READYMADE TRADE DIRECTIVE: <span style="color:#22C55E;">{br_data['option_directive']}</span></span>
+                <span style="font-size:1.1rem; font-weight:800; color:#FDE047; background:rgba(253,224,71,0.15); padding:4px 12px; border-radius:30px;">Conviction: {br_data['conviction']}</span>
+            </div>
+            <hr style="margin: 10px 0; border-color: rgba(255,255,255,0.15);">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 8px;">
+                <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 8px; border: 1px solid #38bdf8;">
+                    <h4 style="color:#38BDF8; margin:0 0 4px 0; font-size:0.9rem;">🎯 Option Buying Leverage Strategy</h4>
+                    <p style="color:#F8FAFC; margin:2px 0; font-size:0.85rem;"><b>Action:</b> <span style="color:#22C55E; font-weight:bold;">{br_data['option_action_type']}</span></p>
+                    <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Target ROI:</b> <span style="color:#FDE047; font-weight:bold;">{br_data['target_roi']}</span></p>
+                    <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Risk Management:</b> {br_data['option_sl']}</p>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 8px; border: 1px solid #10b981;">
+                    <h4 style="color:#10B981; margin:0 0 4px 0; font-size:0.9rem;">📐 Fibonacci Targets & SL</h4>
+                    <p style="color:#F8FAFC; margin:2px 0; font-size:0.85rem;"><b>Invalidation SL:</b> <span style="color:#EF4444; font-weight:bold;">₹{br_data['ew'].get('invalidation_sl', 0.0):,.2f}</span></p>
+                    <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> ₹{br_data['ew'].get('target_1', 0.0):,.2f} | <b>T2:</b> ₹{br_data['ew'].get('target_2', 0.0):,.2f}</p>
+                    <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Risk:Reward:</b> {br_data['ew'].get('rr_ratio', '1:4.0')}</p>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 8px; border: 1px solid #a5b4fc;">
+                    <h4 style="color:#A5B4FC; margin:0 0 4px 0; font-size:0.9rem;">⏱️ Time Cycle & ETF Alternative</h4>
+                    <p style="color:#F8FAFC; margin:2px 0; font-size:0.85rem;"><b>Optimal Holding Time:</b> {br_data['ew'].get('holding_time', '')}</p>
+                    <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Cash Alternative:</b> {br_data['etf_alternative']}</p>
+                </div>
+            </div>
+            <p style="color:#E2E8F0; font-size:0.85rem; margin:10px 0 0 0;">🌊 <b>Elliott Heading & Projection:</b> {br_data['ew'].get('heading', '')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # ─── Real-Time Option Chain & Open Interest Analytics Grid ──
+        st.markdown("#### 📊 Real-Time Option Chain & Open Interest (OI) Analytics Grid")
+        col_oi1, col_oi2, col_oi3, col_oi4 = st.columns(4)
+        with col_oi1:
+            st.metric("Put-Call Ratio (PCR)", f"{br_data['oi']['pcr']:.2f}", delta="Bullish Zone" if br_data['oi']['pcr'] >= 1.0 else "Bearish Zone")
+        with col_oi2:
+            st.metric("Max Pain Level", f"₹{br_data['oi']['max_pain']:,}")
+        with col_oi3:
+            st.metric("Call Resistance Base", f"₹{br_data['oi']['call_resistance_1']:,}")
+        with col_oi4:
+            st.metric("Put Support Base", f"₹{br_data['oi']['put_support_1']:,}")
+            
+        st.info(f"<b>Open Interest Buildup Status:</b> {br_data['oi']['buildup_type']} — <i>{br_data['oi']['oi_action']}</i>", icon="📊")
+        
+        # Expiry Basket Cards
+        st.markdown("##### 📅 Expiry Basket Schedule & Expiry Dates")
+        col_exp1, col_exp2, col_exp3 = st.columns(3)
+        with col_exp1:
+            st.markdown(f"**Current Weekly Expiry:** `{br_data['oi']['weekly_1_expiry']}`")
+        with col_exp2:
+            st.markdown(f"**Next Weekly Expiry:** `{br_data['oi']['weekly_2_expiry']}`")
+        with col_exp3:
+            st.markdown(f"**Monthly Expiry:** `{br_data['oi']['monthly_expiry']}`")
+            
+        st.markdown("---")
+        st.markdown("#### 🔍 Interactive Elliott Wave & Fibonacci Chart")
+        with st.spinner(f"Loading candlestick & Fibonacci projection chart for {br_data['index_name']}..."):
+            c_df = yf.download(br_data['symbol'], period='1y' if clean_br_tf in ['Daily', 'Weekly'] else '2mo', interval='1h' if clean_br_tf == '1-Hour' else ('15m' if clean_br_tf == '15-Min' else ('1wk' if clean_br_tf == 'Weekly' else '1d')), progress=False)
+            if isinstance(c_df.columns, pd.MultiIndex): c_df.columns = [c[0] for c in c_df.columns]
+            if not c_df.empty:
+                create_chart_pattern_chart(c_df, {'Trigger_Entry': br_data['spot_price'], 'Stop_Loss': br_data['ew'].get('invalidation_sl'), 'Target_1': br_data['ew'].get('target_1'), 'Target_2': br_data['ew'].get('target_2')}, title=f"{br_data['index_name']} — BlackRock Elliott & Fibonacci ({clean_br_tf})")
+
+
+# ─── TAB 3: ADVANCED REAL-TIME ALERTS (Pre-Move Signals) ───────────────────
+
+with tab_adv_alerts:
+    st.markdown("### ⚡ ADVANCED REAL-TIME ALERTS — Pre-Market Move Institutional Signals")
+    st.markdown("""
+    Top 1% Institutional Orderflow & Micro-Structure Detection Engine (**Wyckoff Sweeps, Volatility Squeezes, Smart Money Absorption, Early Breakouts**).
+    Designed to capture trades **BEFORE retail traders enter** for asymmetrical **Risk-Reward Ratios (1:4.0 to 1:8.0)**.
+    """)
+    
+    col_al_tf, col_al_univ, col_al_btn = st.columns([1.5, 1.5, 1])
+    with col_al_tf:
+        al_timeframe = st.selectbox(
+            "⏱️ **Alert Timeframe**",
+            ["15-Min (Intraday Alpha Trigger)", "1-Hour (Intraday Acceleration)", "Daily (Swing Trend Explosion)", "Weekly (Positional Macro Surge)"],
+            key="al_tf_select"
+        )
+    with col_al_univ:
+        al_universe = st.selectbox(
+            "🌐 **Scan Universe**",
+            ["⚡ Top 50 F&O Stocks", "📊 Full 200 F&O Universe", "🌐 Full 500 Universe"],
+            key="al_univ_select"
+        )
+    with col_al_btn:
+        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+        run_al_scan = st.button("🚀 **Scan Advanced Alerts**", use_container_width=True, type="primary")
+        
+    clean_al_tf = "15m" if "15-Min" in al_timeframe else ("1h" if "1-Hour" in al_timeframe else ("Weekly" if "Weekly" in al_timeframe else "Daily"))
+    
+    if run_al_scan or 'advanced_alerts_df' not in st.session_state:
+        if "500" in al_universe:
+            target_tickers = get_nifty500_tickers()
+        elif "200" in al_universe:
+            target_tickers = get_nifty200_tickers()
+        else:
+            target_tickers = get_nifty50_tickers()
+            
+        prog_al = st.progress(0)
+        status_al = st.empty()
+        
+        def update_al_prog(curr, tot, name):
+            prog_al.progress(curr / tot)
+            status_al.text(f"Scanning Institutional Alerts ({curr}/{tot}): {name}")
+            
+        with st.spinner(f"Scanning {len(target_tickers)} stocks for Pre-Move Alerts ({clean_al_tf} Timeframe)..."):
+            al_df = scan_all_institutional_alerts(target_tickers, timeframe=clean_al_tf, progress_callback=update_al_prog)
+            st.session_state['advanced_alerts_df'] = al_df
+            st.session_state['al_last_tf'] = al_timeframe
+            
+        prog_al.empty()
+        status_al.empty()
+    else:
+        al_df = st.session_state.get('advanced_alerts_df', pd.DataFrame())
+        
+    if not al_df.empty:
+        col_al_cnt, col_al_pdf = st.columns([3, 1])
+        with col_al_cnt:
+            st.markdown(f"#### ⚡ Pre-Move Real-Time Alerts: **{len(al_df)} Found** ({st.session_state.get('al_last_tf', al_timeframe)})")
+        with col_al_pdf:
+            pdf_al_bytes = generate_pdf_report(
+                al_df,
+                title="Institutional Advanced Real-Time Alerts",
+                subtitle=f"Timeframe: {st.session_state.get('al_last_tf', al_timeframe)}",
+                mode=clean_al_tf,
+                universe=al_universe
+            )
+            st.download_button(
+                label="📄 **Download Advanced Alerts PDF**",
+                data=pdf_al_bytes,
+                file_name=f"Advanced_Alerts_Report_{int(time.time())}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+            
+        # Sub-category tabs
+        al_tab_all, al_tab_wyckoff, al_tab_squeeze, al_tab_abs, al_tab_pre = st.tabs([
+            f"⚡ All Alerts ({len(al_df)})",
+            f"🦅 Wyckoff Sweeps ({len(al_df[al_df['Alert_Type'].str.contains('Wyckoff', na=False)])})",
+            f"💥 Volatility Squeezes ({len(al_df[al_df['Alert_Type'].str.contains('Squeeze', na=False)])})",
+            f"🏦 Smart Money Absorption ({len(al_df[al_df['Alert_Type'].str.contains('Absorption', na=False)])})",
+            f"🔥 Early Breakout Intimations ({len(al_df[al_df['Alert_Type'].str.contains('Acceleration', na=False)])})"
+        ])
+        
+        def render_advanced_alerts_table(df_a, cat_label: str = "Advanced Alerts"):
+            if df_a.empty:
+                st.info(f"No candidates in {cat_label} currently.")
+                return
+                
+            col_a_btn1, col_a_btn2 = st.columns([3, 1])
+            with col_a_btn2:
+                pdf_sub_al = generate_pdf_report(
+                    df_a,
+                    title=f"Advanced Alerts — {cat_label}",
+                    subtitle=f"Timeframe: {st.session_state.get('al_last_tf', al_timeframe)}",
+                    mode=clean_al_tf,
+                    universe=al_universe
+                )
+                st.download_button(
+                    label=f"📄 **Download {cat_label} PDF**",
+                    data=pdf_sub_al,
+                    file_name=f"{cat_label.replace(' ', '_')}_{int(time.time())}.pdf",
+                    mime="application/pdf",
+                    key=f"btn_pdf_al_{cat_label}_{time.time()}",
+                    use_container_width=True
+                )
+                
+            al_display_cols = [
+                'Ticker', 'Name', 'Alert_Type', 'Direction', 'Alert_Status', 'Current_Price', 'Change%',
+                'Trigger_Entry', 'Stop_Loss', 'Target_1', 'Target_2', 'Target_3', 'RR_Ratio', 'Time_Cycle', 'Option_Strike', 'Conviction'
+            ]
+            available_al = [c for c in al_display_cols if c in df_a.columns]
+            
+            styled_al = df_a[available_al].style \
+                .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BUY' in str(v) else ('color: #EF4444; font-weight: bold;' if 'SELL' in str(v) else ''), subset=['Direction'] if 'Direction' in available_al else []) \
+                .map(lambda v: 'color: #FBBF24; font-weight: bold;' if 'EARLY' in str(v) else 'color: #38BDF8;', subset=['Alert_Status'] if 'Alert_Status' in available_al else []) \
+                .format({
+                    'Current_Price': '₹{:.2f}',
+                    'Change%': '{:+.2f}%',
+                    'Trigger_Entry': '₹{:.2f}',
+                    'Stop_Loss': '₹{:.2f}',
+                    'Target_1': '₹{:.2f}',
+                    'Target_2': '₹{:.2f}',
+                    'Target_3': '₹{:.2f}'
+                }, na_rep='—')
+                
+            st.dataframe(styled_al, use_container_width=True, height=380)
+            
+        with al_tab_all: render_advanced_alerts_table(al_df, "All Alerts")
+        with al_tab_wyckoff: render_advanced_alerts_table(al_df[al_df['Alert_Type'].str.contains('Wyckoff', na=False)], "Wyckoff Sweeps")
+        with al_tab_squeeze: render_advanced_alerts_table(al_df[al_df['Alert_Type'].str.contains('Squeeze', na=False)], "Volatility Squeezes")
+        with al_tab_abs: render_advanced_alerts_table(al_df[al_df['Alert_Type'].str.contains('Absorption', na=False)], "Smart Money Absorption")
+        with al_tab_pre: render_advanced_alerts_table(al_df[al_df['Alert_Type'].str.contains('Acceleration', na=False)], "Early Breakout Intimations")
+        
+        st.markdown("---")
+        st.markdown("#### 🔍 Interactive Advanced Alert Visualizer")
+        al_ticker_list = al_df['Ticker'].tolist()
+        sel_al_ticker = st.selectbox("Select Alert Stock to Inspect:", al_ticker_list, key="al_select_stock")
+        
+        if sel_al_ticker:
+            matched_al = al_df[al_df['Ticker'] == sel_al_ticker].iloc[0].to_dict()
+            
+            st.markdown(f"""
+            <div class="pattern-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:1.2rem; font-weight:800; color:#F8FAFC;">⚡ {matched_al['Alert_Type']} — {matched_al['Ticker']} ({matched_al['Name']})</span>
+                    <span style="font-size:1.0rem; font-weight:700; color:#FDE047;">{matched_al['Alert_Status']}</span>
+                </div>
+                <hr style="margin: 8px 0; border-color: #334155;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px;">
+                    <div>
+                        <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Live Spot Price:</b> ₹{matched_al['Current_Price']:.2f} ({matched_al['Change%']:+.2f}%)</p>
+                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Trigger Entry:</b> ₹{matched_al['Trigger_Entry']:.2f}</p>
+                        <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Invalidation SL:</b> ₹{matched_al['Stop_Loss']:.2f}</p>
+                    </div>
+                    <div>
+                        <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> ₹{matched_al['Target_1']:.2f} | <b>T2:</b> ₹{matched_al['Target_2']:.2f}</p>
+                        <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Target 3 (Runner):</b> ₹{matched_al['Target_3']:.2f}</p>
+                        <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Risk:Reward:</b> {matched_al['RR_Ratio']}</p>
+                    </div>
+                    <div>
+                        <p style="color:#A5B4FC; margin:2px 0; font-size:0.85rem;"><b>Target Reach Timing:</b> {matched_al['Time_Cycle']}</p>
+                        <p style="color:#F472B6; margin:2px 0; font-size:0.85rem;"><b>Wall Street Option:</b> {matched_al['Option_Strike']}</p>
+                        <p style="color:#94A3B8; margin:2px 0; font-size:0.85rem;"><b>Conviction:</b> {matched_al['Conviction']}</p>
+                    </div>
+                </div>
+                <p style="color:#E2E8F0; font-size:0.85rem; margin:8px 0 0 0;">💡 <b>Pre-Move Intelligence:</b> {matched_al['Rationale']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            with st.spinner(f"Loading chart for {sel_al_ticker}..."):
+                df_chart_al, _, _, _ = fetch_stock_data_realtime(sel_al_ticker, period='1y')
+                if df_chart_al is not None and not df_chart_al.empty:
+                    create_chart_pattern_chart(df_chart_al, matched_al, title=f"{sel_al_ticker} — {matched_al['Alert_Type']} ({clean_al_tf})")
+    else:
+        st.info("No stocks currently meet strict institutional pre-move alert criteria in this scan. Click 'Scan Advanced Alerts' to run again.")
+
+
+# ─── TAB 4: TRADE CHART — Institutional Price Action Setups ─────────────────
 
 with tab_trade_chart:
     st.markdown("### 📈 TRADE CHART — Institutional Price Action Setups (15m, 1h, Daily, Weekly)")
