@@ -21,51 +21,24 @@ from stock_universe import (
     get_nifty500_tickers,
     get_stock_info
 )
+from safe_data_pipeline import safe_download, safe_get_fast_info
 
 logger = logging.getLogger(__name__)
 
 def fetch_stock_data_realtime(ticker: str, period: str = '3mo') -> tuple:
     """
-    Fetch OHLCV data and guarantee the latest candle contains the REAL-TIME live trading price.
+    Fetch OHLCV data safely without YFRateLimitError exceptions.
     Returns (df, rt_price, prev_close, change_pct).
     """
     try:
-        t = yf.Ticker(ticker)
-        fi = getattr(t, 'fast_info', None)
-        rt_price = None
-        prev_close = None
-        if fi:
-            rt_price = getattr(fi, 'last_price', None) or getattr(fi, 'regular_market_price', None)
-            prev_close = getattr(fi, 'previous_close', None) or getattr(fi, 'regular_market_previous_close', None)
-            
-        df = yf.download(ticker, period=period, interval='1d', progress=False)
-        if df is None or df.empty:
+        rt_price, prev_close = safe_get_fast_info(ticker)
+        df = safe_download(ticker, period=period, interval='1d')
+        
+        if df is None or df.empty or len(df) < 5:
             return None, None, None, None
             
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = [col[0] for col in df.columns]
-            
-        df = df.dropna(subset=['Open', 'High', 'Low'])
-        if len(df) < 10:
-            return None, None, None, None
-            
-        # Synchronize latest candle with live real-time price
-        if rt_price and float(rt_price) > 0:
-            rt_price = float(rt_price)
-            last_idx = df.index[-1]
-            df.loc[last_idx, 'Close'] = rt_price
-            if rt_price > df.loc[last_idx, 'High']:
-                df.loc[last_idx, 'High'] = rt_price
-            if rt_price < df.loc[last_idx, 'Low']:
-                df.loc[last_idx, 'Low'] = rt_price
-        else:
-            rt_price = float(df['Close'].dropna().iloc[-1])
-            
-        if not prev_close or float(prev_close) <= 0:
-            prev_close = float(df['Close'].iloc[-2]) if len(df) > 1 else rt_price
-        else:
-            prev_close = float(prev_close)
-            
+        rt_price = rt_price or float(df['Close'].iloc[-1])
+        prev_close = prev_close or (float(df['Close'].iloc[-2]) if len(df) > 1 else rt_price)
         chg_pct = ((rt_price - prev_close) / prev_close) * 100 if prev_close > 0 else 0.0
         
         df = compute_all_indicators(df)

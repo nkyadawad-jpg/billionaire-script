@@ -26,6 +26,7 @@ from indicators import compute_all_indicators
 from stock_universe import get_stock_info, get_nifty500_tickers, get_nifty50_tickers, get_nifty200_tickers
 from scanner import fetch_stock_data_realtime
 from unified_consensus import calculate_unified_consensus
+from safe_data_pipeline import safe_download, safe_get_fast_info
 
 logger = logging.getLogger(__name__)
 
@@ -599,29 +600,19 @@ def scan_trade_chart_for_ticker(ticker: str, timeframe: str = '1-Hour') -> Optio
         info = get_stock_info(ticker)
         name = info.get('name', ticker)
         
-        t = yf.Ticker(ticker)
-        fi = getattr(t, 'fast_info', None)
-        rt_price = getattr(fi, 'last_price', None) or getattr(fi, 'regular_market_price', None) if fi else None
-        prev_close = getattr(fi, 'previous_close', None) or getattr(fi, 'regular_market_previous_close', None) if fi else None
+        rt_price, prev_close = safe_get_fast_info(ticker)
         
         tf_lower = timeframe.lower()
         if '15' in tf_lower:
-            df = yf.download(ticker, period='1mo', interval='15m', progress=False)
+            df = safe_download(ticker, period='1mo', interval='15m')
         elif '1h' in tf_lower or 'hour' in tf_lower:
-            df = yf.download(ticker, period='2mo', interval='1h', progress=False)
+            df = safe_download(ticker, period='2mo', interval='1h')
         elif 'week' in tf_lower:
-            df = yf.download(ticker, period='3y', interval='1wk', progress=False)
+            df = safe_download(ticker, period='3y', interval='1wk')
         else:
             df, rt_price, prev_close, _ = fetch_stock_data_realtime(ticker, period='1y')
             
-        if df is None or df.empty:
-            return None
-            
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = [c[0] for c in df.columns]
-            
-        df = df.dropna(subset=['Open', 'High', 'Low', 'Close'])
-        if len(df) < 15:
+        if df is None or df.empty or len(df) < 5:
             return None
             
         # Synchronize latest live quote cleanly

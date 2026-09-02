@@ -115,112 +115,110 @@ if not check_password():
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
     
-    * { font-family: 'Outfit', 'JetBrains Mono', -apple-system, sans-serif; }
+    * { font-family: 'Inter', 'Outfit', -apple-system, sans-serif; }
     
-    /* Cyber Dark Matrix Canvas */
+    /* Ultra Rich FinTech Canvas */
     .stApp {
-        background: #030712 !important;
+        background: #0B0F19 !important;
         background-image: 
-            radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
-            radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%) !important;
+            radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+            radial-gradient(at 50% 100%, rgba(56, 189, 248, 0.08) 0px, transparent 50%) !important;
         background-attachment: fixed !important;
     }
     
-    /* Sci-Fi Cyber Glass Header */
+    /* FinTech Glass Header */
     .main-header {
-        background: rgba(9, 14, 28, 0.85) !important;
-        backdrop-filter: blur(24px) saturate(200%) !important;
-        -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
-        padding: 28px 34px !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(0, 240, 255, 0.3) !important;
-        box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+        background: rgba(17, 24, 39, 0.75) !important;
+        backdrop-filter: blur(28px) saturate(200%) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+        padding: 28px 36px !important;
+        border-radius: 24px !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
         margin-bottom: 24px !important;
         text-align: center !important;
-        position: relative !important;
     }
     .main-title {
         font-size: 2.6rem !important;
         font-weight: 800 !important;
-        background: linear-gradient(90deg, #00F0FF 0%, #7C3AED 50%, #10B981 100%) !important;
+        background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, #38BDF8 100%) !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
-        letter-spacing: 0.5px !important;
+        letter-spacing: -0.5px !important;
         margin: 0 !important;
-        text-transform: uppercase !important;
     }
     .sub-title {
-        font-size: 0.95rem !important;
+        font-size: 0.98rem !important;
         color: #94A3B8 !important;
         margin-top: 8px !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        letter-spacing: 1px !important;
+        font-weight: 500 !important;
     }
     
-    /* High-Tech Glowing Metric HUD Cards */
+    /* FinTech Glass Metric Cards */
     .metric-card {
-        background: rgba(15, 23, 42, 0.75) !important;
-        backdrop-filter: blur(18px) !important;
+        background: rgba(17, 24, 39, 0.75) !important;
+        backdrop-filter: blur(20px) !important;
         padding: 22px !important;
-        border-radius: 16px !important;
+        border-radius: 20px !important;
         text-align: center !important;
-        border: 1px solid rgba(56, 189, 248, 0.25) !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .metric-card:hover {
-        transform: translateY(-4px) scale(1.02) !important;
-        border-color: #00F0FF !important;
-        box-shadow: 0 0 25px rgba(0, 240, 255, 0.35) !important;
+        transform: translateY(-4px) !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
+        box-shadow: 0 20px 40px rgba(56, 189, 248, 0.2) !important;
     }
     .metric-value {
         font-size: 2.5rem !important;
         font-weight: 800 !important;
-        font-family: 'JetBrains Mono', monospace !important;
         margin: 0 !important;
+        letter-spacing: -1px !important;
     }
     .metric-label {
-        font-size: 0.82rem !important;
+        font-size: 0.85rem !important;
         color: #94A3B8 !important;
         margin-top: 6px !important;
-        font-weight: 700 !important;
+        font-weight: 600 !important;
         text-transform: uppercase !important;
-        letter-spacing: 1px !important;
+        letter-spacing: 0.5px !important;
     }
     
-    /* Cyber Glass Pattern & Inspector Cards */
+    /* FinTech Cards */
     .pattern-card, .index-card {
-        background: rgba(11, 19, 43, 0.85) !important;
-        backdrop-filter: blur(20px) !important;
+        background: rgba(17, 24, 39, 0.8) !important;
+        backdrop-filter: blur(24px) !important;
         padding: 24px !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(139, 92, 246, 0.3) !important;
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 15px rgba(139, 92, 246, 0.1) !important;
+        border-radius: 22px !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45) !important;
         margin-bottom: 20px !important;
         transition: all 0.3s ease !important;
     }
     .pattern-card:hover, .index-card:hover {
-        border-color: #00F0FF !important;
-        box-shadow: 0 0 30px rgba(0, 240, 255, 0.25) !important;
+        border-color: rgba(16, 185, 129, 0.4) !important;
+        box-shadow: 0 20px 50px rgba(16, 185, 129, 0.2) !important;
     }
     
-    /* High-Tech Cyber Buttons */
+    /* FinTech Gradient Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(124, 58, 237, 0.3) 100%) !important;
-        border: 1px solid rgba(56, 189, 248, 0.4) !important;
-        color: #F8FAFC !important;
-        border-radius: 12px !important;
+        background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%) !important;
+        border: none !important;
+        color: #FFFFFF !important;
+        border-radius: 14px !important;
         font-weight: 700 !important;
-        letter-spacing: 0.5px !important;
+        padding: 10px 22px !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35) !important;
         transition: all 0.25s ease !important;
     }
     .stButton > button:hover {
-        border-color: #00F0FF !important;
-        box-shadow: 0 0 20px rgba(0, 240, 255, 0.4) !important;
-        background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(124, 58, 237, 0.5) 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5) !important;
+        opacity: 0.95 !important;
     }
     
     .strong-bull { color: #10B981; }
