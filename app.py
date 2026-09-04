@@ -1,6 +1,6 @@
 """
-⚡ The Ultimate Edge by Noeman
-High-Conviction NSE Trading Engine — Indices 1h/4h Elliott Waves, Next-Day Movers, 
+📊 High-Conviction Institutional NSE Trading Engine
+Multi-Timeframe Elliott Waves (15m/1h/Daily/Weekly), Pre-Market Catalyst News Alerts,
 F&O Analytics, NIFTY 500 Universe, Classical Price Action Chart Patterns & PDF Exporter.
 """
 
@@ -39,8 +39,8 @@ logger = logging.getLogger(__name__)
 # ─── Page Configuration ───────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="⚡ The Ultimate Edge by Noeman",
-    page_icon="⚡",
+    page_title="📊 High-Conviction Institutional NSE Engine",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -59,31 +59,34 @@ def check_password() -> bool:
     st.markdown("""
     <style>
     .login-container {
-        max-width: 480px;
+        max-width: 500px;
         margin: 60px auto 20px auto;
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-        padding: 40px 30px;
-        border-radius: 20px;
-        border: 1px solid #6366f1;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(40px) saturate(220%) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(220%) !important;
+        padding: 42px 34px;
+        border-radius: 26px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 30px 60px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.3);
         text-align: center;
     }
     .login-title {
-        font-size: 1.8rem;
+        font-size: 1.75rem;
         font-weight: 800;
         color: #F8FAFC;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
+        letter-spacing: -0.3px;
     }
     .login-sub {
         color: #38BDF8;
-        font-size: 1.05rem;
+        font-size: 1.0rem;
         font-weight: 700;
-        margin-bottom: 20px;
+        margin-bottom: 22px;
     }
     </style>
     <div class="login-container">
         <p class="login-title">🔒 RESTRICTED INSTITUTIONAL ACCESS</p>
-        <p class="login-sub">⚡ The Ultimate Edge by Noeman</p>
+        <p class="login-sub">High-Conviction NSE Trading & Analytics Engine</p>
         <p style="color:#94A3B8; font-size:0.88rem; margin-bottom:15px; line-height:1.5;">
             System data is password-protected. Please enter your Master Passcode to unlock real-time trade scanners and institutional PDF dossiers.
         </p>
@@ -112,7 +115,7 @@ if not check_password():
     st.stop()
 
 
-# ─── Custom CSS Styling ───────────────────────────────────────────────────────
+# ─── PURE LIQUID GLASS CSS DESIGN SYSTEM ──────────────────────────────────────
 
 st.markdown("""
 <style>
@@ -120,93 +123,114 @@ st.markdown("""
     
     * { font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
     
-    /* Sleek Ultra-Accessible Dark Slate Canvas */
+    /* Cosmic Ambient Canvas with Pure Liquid Atmosphere */
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #0b132b 0%, #070b19 60%, #02040a 100%) !important;
+        background: radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.14) 0%, transparent 45%), 
+                    radial-gradient(circle at 85% 85%, rgba(56, 189, 248, 0.14) 0%, transparent 45%), 
+                    radial-gradient(circle at 50% 50%, #080d1a 0%, #02050c 100%) !important;
         background-attachment: fixed !important;
         color: #F8FAFC !important;
     }
     
-    /* Header Container */
+    /* Pure Liquid Glass Sidebar */
+    section[data-testid="stSidebar"] {
+        background: rgba(8, 13, 26, 0.65) !important;
+        backdrop-filter: blur(40px) saturate(220%) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(220%) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    /* Pure Liquid Glass Header Container */
     .main-header {
-        background: rgba(15, 23, 42, 0.85) !important;
-        backdrop-filter: blur(28px) saturate(190%) !important;
-        -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-        padding: 26px 32px !important;
-        border-radius: 24px !important;
-        border: 1px solid rgba(99, 102, 241, 0.45) !important;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-        margin-bottom: 24px !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(45px) saturate(220%) !important;
+        -webkit-backdrop-filter: blur(45px) saturate(220%) !important;
+        padding: 28px 36px !important;
+        border-radius: 26px !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 
+                    inset 0 1px 1px rgba(255, 255, 255, 0.35), 
+                    inset 0 -1px 1px rgba(0, 0, 0, 0.4) !important;
+        margin-bottom: 26px !important;
         text-align: center !important;
     }
     .main-title {
-        font-size: 2.7rem !important;
+        font-size: 2.25rem !important;
         font-weight: 800 !important;
-        background: linear-gradient(135deg, #FFFFFF 0%, #FDE047 45%, #38BDF8 100%) !important;
+        background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 40%, #38BDF8 100%) !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
-        letter-spacing: -0.5px !important;
+        letter-spacing: -0.4px !important;
+        line-height: 1.25 !important;
         margin: 0 !important;
     }
     .sub-title {
-        font-size: 1.05rem !important;
-        color: #93C5FD !important;
-        margin-top: 8px !important;
+        font-size: 1.02rem !important;
+        color: #38BDF8 !important;
+        margin-top: 10px !important;
         font-weight: 600 !important;
         letter-spacing: 0.2px !important;
+        line-height: 1.5 !important;
     }
     
-    /* High-Contrast Accessible Tabs */
+    /* Floating Pure Crystal Glass Pill Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px !important;
-        background: rgba(15, 23, 42, 0.6) !important;
-        padding: 8px !important;
-        border-radius: 18px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        gap: 6px !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(35px) saturate(200%) !important;
+        -webkit-backdrop-filter: blur(35px) saturate(200%) !important;
+        padding: 6px !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
     }
     .stTabs [data-baseweb="tab"] {
-        background: rgba(30, 41, 59, 0.7) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
         color: #CBD5E1 !important;
         border-radius: 14px !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        padding: 10px 20px !important;
+        padding: 10px 18px !important;
         font-weight: 600 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.9rem !important;
+        backdrop-filter: blur(20px) !important;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(51, 65, 85, 0.9) !important;
-        color: #F8FAFC !important;
-        border-color: rgba(99, 102, 241, 0.4) !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        color: #FFFFFF !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #4F46E5 0%, #0284C7 100%) !important;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.5) 0%, rgba(56, 189, 248, 0.5) 100%) !important;
         color: #FFFFFF !important;
         font-weight: 800 !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.45) !important;
+        box-shadow: 0 12px 30px rgba(99, 102, 241, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45) !important;
+        backdrop-filter: blur(35px) saturate(220%) !important;
     }
     .stTabs [data-baseweb="tab-highlight"] {
-        background-color: #38BDF8 !important;
-        height: 3px !important;
-        border-radius: 3px !important;
+        display: none !important;
     }
     
-    /* Accessible Metric & Pattern Cards */
+    /* Pure Liquid Glass Cards */
     .metric-card {
-        background: rgba(15, 23, 42, 0.85) !important;
-        backdrop-filter: blur(20px) !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(35px) saturate(200%) !important;
+        -webkit-backdrop-filter: blur(35px) saturate(200%) !important;
         padding: 22px !important;
         border-radius: 20px !important;
         text-align: center !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
         transition: all 0.25s ease !important;
     }
     .metric-card:hover {
         transform: translateY(-3px) !important;
-        border-color: rgba(56, 189, 248, 0.6) !important;
-        box-shadow: 0 18px 40px rgba(56, 189, 248, 0.25) !important;
+        border-color: rgba(56, 189, 248, 0.5) !important;
+        box-shadow: 0 22px 50px rgba(56, 189, 248, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
     }
     .metric-value {
         font-size: 2.5rem !important;
@@ -224,43 +248,48 @@ st.markdown("""
     }
     
     .pattern-card, .index-card {
-        background: rgba(15, 23, 42, 0.85) !important;
-        backdrop-filter: blur(24px) !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(40px) saturate(200%) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
         padding: 24px !important;
         border-radius: 22px !important;
         border: 1px solid rgba(255, 255, 255, 0.16) !important;
-        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
         margin-bottom: 20px !important;
         transition: all 0.3s ease !important;
     }
     .pattern-card:hover, .index-card:hover {
-        border-color: rgba(99, 102, 241, 0.6) !important;
-        box-shadow: 0 22px 50px rgba(99, 102, 241, 0.25) !important;
+        border-color: rgba(99, 102, 241, 0.55) !important;
+        box-shadow: 0 25px 60px rgba(99, 102, 241, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
     }
     
-    /* Modern Action Buttons */
+    /* Pure Liquid Glass Action Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(56, 189, 248, 0.4) 100%) !important;
+        backdrop-filter: blur(30px) saturate(200%) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
         color: #FFFFFF !important;
-        border-radius: 14px !important;
+        border-radius: 16px !important;
         font-weight: 700 !important;
         padding: 12px 24px !important;
-        box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4) !important;
-        backdrop-filter: blur(16px) !important;
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
         transition: all 0.25s ease !important;
     }
     .stButton > button:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.6) 0%, rgba(56, 189, 248, 0.6) 100%) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 10px 28px rgba(79, 70, 229, 0.6) !important;
-        border-color: rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 0 12px 35px rgba(99, 102, 241, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+        border-color: rgba(255, 255, 255, 0.5) !important;
     }
     
-    /* Table styling & High Contrast text */
+    /* Pure Liquid Glass DataFrames & Tables */
     .stDataFrame {
-        border-radius: 16px !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+        background: rgba(15, 23, 42, 0.45) !important;
+        backdrop-filter: blur(30px) saturate(200%) !important;
+        border-radius: 18px !important;
+        border: 1px solid rgba(255, 255, 255, 0.16) !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
     }
     
     .strong-bull { color: #22C55E; font-weight: 700; }
@@ -275,8 +304,8 @@ st.markdown("""
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("### ⚡ **The Ultimate Edge**")
-    st.caption("Designed & Created by **Noeman**")
+    st.markdown("### 📊 **NSE TRADING ENGINE**")
+    st.caption("Institutional Multi-Timeframe Desk")
     if st.button("🔒 **Lock App / Logout**", use_container_width=True):
         st.session_state["authenticated"] = False
         st.rerun()
@@ -319,7 +348,7 @@ with st.sidebar:
         if not st.session_state.get('scan_results', pd.DataFrame()).empty:
             pdf_bytes = generate_pdf_report(
                 st.session_state['scan_results'],
-                title=f"The Ultimate Edge — Market Scan ({st.session_state.get('last_scan_universe')})",
+                title=f"Institutional NSE Market Scan ({st.session_state.get('last_scan_universe')})",
                 subtitle=f"Mode: {st.session_state.get('last_scan_mode')}",
                 mode=st.session_state.get('last_scan_mode', 'Daily'),
                 universe=st.session_state.get('last_scan_universe', 'NSE')
@@ -327,7 +356,7 @@ with st.sidebar:
             st.download_button(
                 label="📄 **Download Full Scan PDF**",
                 data=pdf_bytes,
-                file_name=f"Ultimate_Edge_Scan_{int(time.time())}.pdf",
+                file_name=f"NSE_Market_Scan_{int(time.time())}.pdf",
                 mime="application/pdf",
                 use_container_width=True
             )
@@ -673,8 +702,8 @@ elif 'scan_results' not in st.session_state:
 
 st.markdown("""
 <div class="main-header">
-    <p class="main-title">⚡ The Ultimate Edge by Noeman</p>
-    <p class="sub-title">⚡ High-Conviction NSE Engine — Pre-Market News Catalysts, Classical Price Action Patterns, Elliott Wave Projections & F&O Analytics</p>
+    <p class="main-title">📊 HIGH-CONVICTION INSTITUTIONAL NSE TRADING ENGINE</p>
+    <p class="sub-title">Multi-Timeframe Elliott Waves (15m / 1h / Daily / Weekly) • Pre-Market Catalyst News Alerts • Classical Price Action Patterns • F&O Options Convexity & R:R Setups</p>
 </div>
 """, unsafe_allow_html=True)
 
