@@ -1,6 +1,6 @@
 """
 ⚖️ UNIFIED INSTITUTIONAL CONSENSUS ENGINE
-Designed for BILLIONAIRE SCRIPT by Noeman NK
+Designed for The Ultimate Edge by Noeman
 
 Harmonizes directional signals across ALL scanner modules:
 1. Technical Indicators (RSI, MACD, EMA Crossover, Stochastic, Bollinger, ADX)

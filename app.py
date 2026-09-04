@@ -1,6 +1,6 @@
 """
-👑 BILLIONAIRE SCRIPT by Noeman NK
-High-Conviction NSE Trading Engine — Indices 1h/4h Elliott Waves, Next-Day 3%-20% Movers, 
+⚡ The Ultimate Edge by Noeman
+High-Conviction NSE Trading Engine — Indices 1h/4h Elliott Waves, Next-Day Movers, 
 F&O Analytics, NIFTY 500 Universe, Classical Price Action Chart Patterns & PDF Exporter.
 """
 
@@ -39,8 +39,8 @@ logger = logging.getLogger(__name__)
 # ─── Page Configuration ───────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="👑 BILLIONAIRE SCRIPT by Noeman NK",
-    page_icon="👑",
+    page_title="⚡ The Ultimate Edge by Noeman",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -75,14 +75,15 @@ def check_password() -> bool:
         margin-bottom: 4px;
     }
     .login-sub {
-        color: #A5B4FC;
-        font-size: 0.95rem;
+        color: #38BDF8;
+        font-size: 1.05rem;
+        font-weight: 700;
         margin-bottom: 20px;
     }
     </style>
     <div class="login-container">
         <p class="login-title">🔒 RESTRICTED INSTITUTIONAL ACCESS</p>
-        <p class="login-sub">👑 BILLIONAIRE SCRIPT by Noeman NK</p>
+        <p class="login-sub">⚡ The Ultimate Edge by Noeman</p>
         <p style="color:#94A3B8; font-size:0.88rem; margin-bottom:15px; line-height:1.5;">
             System data is password-protected. Please enter your Master Passcode to unlock real-time trade scanners and institutional PDF dossiers.
         </p>
@@ -115,59 +116,97 @@ if not check_password():
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=SF+Pro+Display:wght@400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
     
-    * { font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; }
+    * { font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
     
-    /* Apple Liquid Glass Canvas */
+    /* Sleek Ultra-Accessible Dark Slate Canvas */
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%) !important;
+        background: radial-gradient(circle at 50% 0%, #0b132b 0%, #070b19 60%, #02040a 100%) !important;
         background-attachment: fixed !important;
+        color: #F8FAFC !important;
     }
     
-    /* Ultra Liquid Glass Header */
+    /* Header Container */
     .main-header {
-        background: rgba(30, 27, 75, 0.45) !important;
-        backdrop-filter: blur(32px) saturate(200%) !important;
-        -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
-        padding: 28px 34px !important;
-        border-radius: 26px !important;
-        border: 1px solid rgba(99, 102, 241, 0.4) !important;
-        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+        background: rgba(15, 23, 42, 0.85) !important;
+        backdrop-filter: blur(28px) saturate(190%) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+        padding: 26px 32px !important;
+        border-radius: 24px !important;
+        border: 1px solid rgba(99, 102, 241, 0.45) !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
         margin-bottom: 24px !important;
         text-align: center !important;
     }
     .main-title {
-        font-size: 2.6rem !important;
+        font-size: 2.7rem !important;
         font-weight: 800 !important;
-        background: linear-gradient(135deg, #FFFFFF 0%, #FDE047 50%, #38BDF8 100%) !important;
+        background: linear-gradient(135deg, #FFFFFF 0%, #FDE047 45%, #38BDF8 100%) !important;
         -webkit-background-clip: text !important;
         -webkit-text-fill-color: transparent !important;
         letter-spacing: -0.5px !important;
         margin: 0 !important;
     }
     .sub-title {
-        font-size: 1.02rem !important;
-        color: #C7D2FE !important;
+        font-size: 1.05rem !important;
+        color: #93C5FD !important;
         margin-top: 8px !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.2px !important;
     }
     
-    /* Liquid Glass Metric Cards */
+    /* High-Contrast Accessible Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        padding: 8px !important;
+        border-radius: 18px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background: rgba(30, 41, 59, 0.7) !important;
+        color: #CBD5E1 !important;
+        border-radius: 14px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 10px 20px !important;
+        font-weight: 600 !important;
+        font-size: 0.92rem !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(51, 65, 85, 0.9) !important;
+        color: #F8FAFC !important;
+        border-color: rgba(99, 102, 241, 0.4) !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #4F46E5 0%, #0284C7 100%) !important;
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5) !important;
+    }
+    .stTabs [data-baseweb="tab-highlight"] {
+        background-color: #38BDF8 !important;
+        height: 3px !important;
+        border-radius: 3px !important;
+    }
+    
+    /* Accessible Metric & Pattern Cards */
     .metric-card {
-        background: rgba(255, 255, 255, 0.04) !important;
-        backdrop-filter: blur(24px) saturate(180%) !important;
+        background: rgba(15, 23, 42, 0.85) !important;
+        backdrop-filter: blur(20px) !important;
         padding: 22px !important;
-        border-radius: 22px !important;
+        border-radius: 20px !important;
         text-align: center !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.25s ease !important;
     }
     .metric-card:hover {
-        transform: translateY(-4px) !important;
-        border-color: rgba(99, 102, 241, 0.6) !important;
-        box-shadow: 0 20px 45px rgba(99, 102, 241, 0.3) !important;
+        transform: translateY(-3px) !important;
+        border-color: rgba(56, 189, 248, 0.6) !important;
+        box-shadow: 0 18px 40px rgba(56, 189, 248, 0.25) !important;
     }
     .metric-value {
         font-size: 2.5rem !important;
@@ -179,49 +218,56 @@ st.markdown("""
         font-size: 0.88rem !important;
         color: #94A3B8 !important;
         margin-top: 6px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
     }
     
-    /* Liquid Glass Pattern Cards */
     .pattern-card, .index-card {
-        background: rgba(15, 23, 42, 0.7) !important;
-        backdrop-filter: blur(28px) saturate(190%) !important;
+        background: rgba(15, 23, 42, 0.85) !important;
+        backdrop-filter: blur(24px) !important;
         padding: 24px !important;
-        border-radius: 24px !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+        border-radius: 22px !important;
+        border: 1px solid rgba(255, 255, 255, 0.16) !important;
+        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
         margin-bottom: 20px !important;
         transition: all 0.3s ease !important;
     }
     .pattern-card:hover, .index-card:hover {
-        border-color: rgba(56, 189, 248, 0.5) !important;
-        box-shadow: 0 22px 55px rgba(56, 189, 248, 0.25) !important;
+        border-color: rgba(99, 102, 241, 0.6) !important;
+        box-shadow: 0 22px 50px rgba(99, 102, 241, 0.25) !important;
     }
     
-    /* Apple Liquid Glass Buttons */
+    /* Modern Action Buttons */
     .stButton > button {
-        background: linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(59, 130, 246, 0.8) 100%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
         color: #FFFFFF !important;
-        border-radius: 16px !important;
+        border-radius: 14px !important;
         font-weight: 700 !important;
         padding: 12px 24px !important;
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4) !important;
-        backdrop-filter: blur(20px) !important;
+        box-shadow: 0 6px 18px rgba(79, 70, 229, 0.4) !important;
+        backdrop-filter: blur(16px) !important;
         transition: all 0.25s ease !important;
     }
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 10px 30px rgba(79, 70, 229, 0.6) !important;
+        box-shadow: 0 10px 28px rgba(79, 70, 229, 0.6) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
     }
     
-    .strong-bull { color: #22C55E; }
-    .moderate-bull { color: #86EFAC; }
+    /* Table styling & High Contrast text */
+    .stDataFrame {
+        border-radius: 16px !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    .strong-bull { color: #22C55E; font-weight: 700; }
+    .moderate-bull { color: #86EFAC; font-weight: 700; }
     .neutral { color: #94A3B8; }
-    .moderate-bear { color: #FCA5A5; }
-    .strong-bear { color: #EF4444; }
+    .moderate-bear { color: #FCA5A5; font-weight: 700; }
+    .strong-bear { color: #EF4444; font-weight: 700; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -229,8 +275,8 @@ st.markdown("""
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("### 👑 **BILLIONAIRE SCRIPT**")
-    st.caption("Designed & Created by **Noeman NK**")
+    st.markdown("### ⚡ **The Ultimate Edge**")
+    st.caption("Designed & Created by **Noeman**")
     if st.button("🔒 **Lock App / Logout**", use_container_width=True):
         st.session_state["authenticated"] = False
         st.rerun()
@@ -273,7 +319,7 @@ with st.sidebar:
         if not st.session_state.get('scan_results', pd.DataFrame()).empty:
             pdf_bytes = generate_pdf_report(
                 st.session_state['scan_results'],
-                title=f"Full Market Scan ({st.session_state.get('last_scan_universe')})",
+                title=f"The Ultimate Edge — Market Scan ({st.session_state.get('last_scan_universe')})",
                 subtitle=f"Mode: {st.session_state.get('last_scan_mode')}",
                 mode=st.session_state.get('last_scan_mode', 'Daily'),
                 universe=st.session_state.get('last_scan_universe', 'NSE')
@@ -281,7 +327,7 @@ with st.sidebar:
             st.download_button(
                 label="📄 **Download Full Scan PDF**",
                 data=pdf_bytes,
-                file_name=f"Billionaire_Script_Scan_{int(time.time())}.pdf",
+                file_name=f"Ultimate_Edge_Scan_{int(time.time())}.pdf",
                 mime="application/pdf",
                 use_container_width=True
             )
@@ -627,8 +673,8 @@ elif 'scan_results' not in st.session_state:
 
 st.markdown("""
 <div class="main-header">
-    <p class="main-title">👑 BILLIONAIRE SCRIPT by Noeman NK</p>
-    <p class="sub-title">⚡ High-Conviction NSE Engine — Indices 1h/4h Elliott Waves, Next-Day 3%-20% Movers, Price Action Patterns, F&O & NIFTY 500</p>
+    <p class="main-title">⚡ The Ultimate Edge by Noeman</p>
+    <p class="sub-title">⚡ High-Conviction NSE Engine — Pre-Market News Catalysts, Classical Price Action Patterns, Elliott Wave Projections & F&O Analytics</p>
 </div>
 """, unsafe_allow_html=True)
 

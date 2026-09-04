@@ -1,6 +1,6 @@
 """
 📰 IMPACT NEWS ALERTS & CATALYST INTELLIGENCE ENGINE
-Designed for BILLIONAIRE SCRIPT by Noeman NK
+Designed for The Ultimate Edge by Noeman
 
 Features:
 1. Real-Time Indian Stock Market Catalyst Tracker (Order Wins, Mergers & Acquisitions, Regulatory Approvals, Block Deals, Earnings Surprises)

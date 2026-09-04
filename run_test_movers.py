@@ -16,7 +16,7 @@ def main():
     
     if not df.empty:
         print("\n" + "="*85)
-        print("NEXT-DAY 4%+ EXPLOSIVE MOVER CANDIDATES (BILLIONAIRE SCRIPT)")
+        print("NEXT-DAY 4%+ EXPLOSIVE MOVER CANDIDATES (The Ultimate Edge by Noeman)")
         print("="*85)
         for _, r in df.iterrows():
             print(f"[{r['Direction']}] {r['Ticker']} - {r['Name']}")

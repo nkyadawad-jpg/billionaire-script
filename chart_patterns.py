@@ -1,6 +1,6 @@
 """
 Institutional Price Action Chart Patterns Detection Engine
-Part of BILLIONAIRE SCRIPT by Noeman NK
+Part of The Ultimate Edge by Noeman
 
 Detects:
 1. 🚩 Bullish / Bearish Flag & Pole (Pre-Breakout / Breaking Out Just Now)

@@ -1,6 +1,6 @@
 """
 🔮 BLACKROCK QUANT ENGINE & INSTITUTIONAL OPTION CHAIN ANALYTICS
-For NIFTY 50 & SENSEX — Designed for BILLIONAIRE SCRIPT by Noeman NK
+For NIFTY 50 & SENSEX — Designed for The Ultimate Edge by Noeman
 
 Features:
 1. Multi-Timeframe Elliott Wave & Fibonacci Projections (15m, 1h, Daily, Weekly)

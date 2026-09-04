@@ -1,6 +1,6 @@
 """
 🛡️ BULLETPROOF DATA PIPELINE & MULTI-SOURCE NEWS AGGREGATOR
-Designed for BILLIONAIRE SCRIPT by Noeman NK
+Designed for The Ultimate Edge by Noeman
 
 Solves YFRateLimitError & Network Failures Permanently:
 1. Bulletproof Data Fetching (Retries, Catch RateLimitError, Fallback Generation)

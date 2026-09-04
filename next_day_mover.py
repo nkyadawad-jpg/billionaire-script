@@ -1,6 +1,6 @@
 """
 Next-Day 4%+ Explosive Movers Detection Engine
-Part of BILLIONAIRE SCRIPT by Noeman NK
+Part of The Ultimate Edge by Noeman
 
 Identifies stocks with the highest mathematical probability of moving 4% or more
 in the next trading session based on:

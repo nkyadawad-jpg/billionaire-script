@@ -1,6 +1,6 @@
 """
 ⚡ TOP 1% INSTITUTIONAL REAL-TIME ADVANCE ALERTS ENGINE
-Designed for BILLIONAIRE SCRIPT by Noeman NK
+Designed for The Ultimate Edge by Noeman
 
 World-Class Quantitative & Orderflow Detection Models:
 1. 🦅 Wyckoff Liquidity Sweep & Spring/Upthrust (Stop-Run Reversal Alpha)

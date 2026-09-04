@@ -1,7 +1,7 @@
 """
 NSE Major Indices Elliott Wave Analysis Engine (NIFTY 50 & SENSEX Only)
 Wall Street Institutional Grade — 1-Hourly & 4-Hourly Timeframes
-Part of BILLIONAIRE SCRIPT by Noeman NK
+Part of The Ultimate Edge by Noeman
 """
 
 import numpy as np

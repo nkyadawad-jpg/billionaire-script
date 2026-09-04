@@ -1,6 +1,6 @@
 """
 📈 TRADE CHART — Institutional Price Action Chart Patterns Detection Engine
-Designed for BILLIONAIRE SCRIPT by Noeman NK
+Designed for The Ultimate Edge by Noeman
 
 Refined Multi-Timeframe Threshold Engine:
 - 15-Min: Intraday Scalp Alert (Tight 1.2% height, 2.5% pole)
