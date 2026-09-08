@@ -383,6 +383,56 @@ def render_metric_card(label: str, value: int, css_class: str):
     """, unsafe_allow_html=True)
 
 
+def safe_fmt_currency(val, prefix: str = "₹") -> str:
+    """Safely format numeric price values without throwing exceptions on strings, NaN or None."""
+    if val is None or val == '—' or val == 'N/A' or val == '':
+        return '—'
+    try:
+        v = float(val)
+        if np.isnan(v):
+            return '—'
+        return f"{prefix}{v:.2f}"
+    except (ValueError, TypeError):
+        return str(val)
+
+
+def safe_fmt_pct(val) -> str:
+    """Safely format percentage values."""
+    if val is None or val == '—' or val == 'N/A' or val == '':
+        return '—'
+    try:
+        v = float(val)
+        if np.isnan(v):
+            return '—'
+        return f"{v:+.2f}%"
+    except (ValueError, TypeError):
+        return str(val)
+
+
+def safe_fmt_score(val) -> str:
+    """Safely format integer score values."""
+    if val is None or val == '—' or val == 'N/A' or val == '':
+        return '—'
+    try:
+        v = int(float(val))
+        return f"{v:+d}"
+    except (ValueError, TypeError):
+        return str(val)
+
+
+def safe_fmt_num1(val) -> str:
+    """Safely format single decimal values (RSI, ADX)."""
+    if val is None or val == '—' or val == 'N/A' or val == '':
+        return '—'
+    try:
+        v = float(val)
+        if np.isnan(v):
+            return '—'
+        return f"{v:.1f}"
+    except (ValueError, TypeError):
+        return str(val)
+
+
 def style_signal(val):
     """Apply color styling to Signal column."""
     color_map = {
@@ -525,19 +575,34 @@ def create_elliott_wave_chart(df: pd.DataFrame, pivots: list, setup_info: dict, 
         
     # Invalidation Level (SL) line
     inv = setup_info.get('invalidation_price')
-    if inv:
-        fig.add_hline(y=inv, line_dash="dash", line_color="#EF4444", 
-                      annotation_text=f"Invalidation SL: ₹{inv:.2f}", annotation_position="bottom right", row=1, col=1)
+    if inv is not None:
+        try:
+            inv_v = float(inv)
+            if not np.isnan(inv_v):
+                fig.add_hline(y=inv_v, line_dash="dash", line_color="#EF4444", 
+                              annotation_text=f"Invalidation SL: ₹{inv_v:.2f}", annotation_position="bottom right", row=1, col=1)
+        except (ValueError, TypeError):
+            pass
                       
     # Target Lines & Heading Projection
     t1 = setup_info.get('target_1')
     t2 = setup_info.get('target_2')
-    if t1:
-        fig.add_hline(y=t1, line_dash="dash", line_color="#22C55E", 
-                      annotation_text=f"Wave Target 1 (1.618 Fib): ₹{t1:.2f}", annotation_position="top right", row=1, col=1)
-    if t2:
-        fig.add_hline(y=t2, line_dash="dot", line_color="#38BDF8", 
-                      annotation_text=f"Wave Target 2 (2.0 Fib): ₹{t2:.2f}", annotation_position="top right", row=1, col=1)
+    if t1 is not None:
+        try:
+            t1_v = float(t1)
+            if not np.isnan(t1_v):
+                fig.add_hline(y=t1_v, line_dash="dash", line_color="#22C55E", 
+                              annotation_text=f"Wave Target 1 (1.618 Fib): ₹{t1_v:.2f}", annotation_position="top right", row=1, col=1)
+        except (ValueError, TypeError):
+            pass
+    if t2 is not None:
+        try:
+            t2_v = float(t2)
+            if not np.isnan(t2_v):
+                fig.add_hline(y=t2_v, line_dash="dot", line_color="#38BDF8", 
+                              annotation_text=f"Wave Target 2 (2.0 Fib): ₹{t2_v:.2f}", annotation_position="top right", row=1, col=1)
+        except (ValueError, TypeError):
+            pass
         
     # Heading Destination Banner
     heading = setup_info.get('heading_destination')
@@ -616,27 +681,47 @@ def create_chart_pattern_chart(df: pd.DataFrame, pattern_data: dict, title: str 
         
     # Trigger Entry Line
     entry = pattern_data.get('Trigger_Entry')
-    if entry:
-        fig.add_hline(y=entry, line_dash="dash", line_color="#38BDF8", 
-                      annotation_text=f"Breakout Trigger: ₹{entry:.2f}", annotation_position="top right", row=1, col=1)
+    if entry is not None:
+        try:
+            entry_v = float(entry)
+            if not np.isnan(entry_v):
+                fig.add_hline(y=entry_v, line_dash="dash", line_color="#38BDF8", 
+                              annotation_text=f"Breakout Trigger: ₹{entry_v:.2f}", annotation_position="top right", row=1, col=1)
+        except (ValueError, TypeError):
+            pass
                       
     # Stop Loss Line
     sl = pattern_data.get('Stop_Loss')
-    if sl:
-        fig.add_hline(y=sl, line_dash="dash", line_color="#EF4444", 
-                      annotation_text=f"Stop Loss: ₹{sl:.2f}", annotation_position="bottom right", row=1, col=1)
+    if sl is not None:
+        try:
+            sl_v = float(sl)
+            if not np.isnan(sl_v):
+                fig.add_hline(y=sl_v, line_dash="dash", line_color="#EF4444", 
+                              annotation_text=f"Stop Loss: ₹{sl_v:.2f}", annotation_position="bottom right", row=1, col=1)
+        except (ValueError, TypeError):
+            pass
                       
     # Target 1 Line
     t1 = pattern_data.get('Target_1')
-    if t1:
-        fig.add_hline(y=t1, line_dash="dot", line_color="#22C55E", 
-                      annotation_text=f"Target 1: ₹{t1:.2f}", annotation_position="top right", row=1, col=1)
+    if t1 is not None:
+        try:
+            t1_v = float(t1)
+            if not np.isnan(t1_v):
+                fig.add_hline(y=t1_v, line_dash="dot", line_color="#22C55E", 
+                              annotation_text=f"Target 1: ₹{t1_v:.2f}", annotation_position="top right", row=1, col=1)
+        except (ValueError, TypeError):
+            pass
                       
     # Target 2 Line
     t2 = pattern_data.get('Target_2')
-    if t2:
-        fig.add_hline(y=t2, line_dash="dot", line_color="#10B981", 
-                      annotation_text=f"Target 2: ₹{t2:.2f}", annotation_position="top right", row=1, col=1)
+    if t2 is not None:
+        try:
+            t2_v = float(t2)
+            if not np.isnan(t2_v):
+                fig.add_hline(y=t2_v, line_dash="dot", line_color="#10B981", 
+                              annotation_text=f"Target 2: ₹{t2_v:.2f}", annotation_position="top right", row=1, col=1)
+        except (ValueError, TypeError):
+            pass
                       
     # RSI
     if 'RSI' in df.columns:
@@ -830,7 +915,7 @@ with tab_news:
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px;">
                     <div>
                         <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Stock Name:</b> {matched_nw['Name']} ({matched_nw['Ticker']})</p>
-                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Spot Price:</b> ₹{matched_nw['Current_Price']:.2f} ({matched_nw['Change%']:+.2f}%)</p>
+                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Spot Price:</b> {safe_fmt_currency(matched_nw.get('Current_Price'))} ({safe_fmt_pct(matched_nw.get('Change%'))})</p>
                         <p style="color:#A5B4FC; margin:2px 0; font-size:0.85rem;"><b>Disclosed By:</b> {matched_nw['Publisher']}</p>
                     </div>
                     <div>
@@ -969,12 +1054,12 @@ with tab_trade_chart:
                 .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BUY' in str(v) else ('color: #EF4444; font-weight: bold;' if 'SELL' in str(v) else ''), subset=['Direction'] if 'Direction' in available_tc else []) \
                 .map(lambda v: 'color: #FBBF24; font-weight: bold;' if 'JUST NOW' in str(v) else 'color: #38BDF8;', subset=['Status'] if 'Status' in available_tc else []) \
                 .format({
-                    'Current_Price': '₹{:.2f}',
-                    'Change%': '{:+.2f}%',
-                    'Trigger_Entry': '₹{:.2f}',
-                    'Stop_Loss': '₹{:.2f}',
-                    'Target_1': '₹{:.2f}',
-                    'Target_2': '₹{:.2f}'
+                    'Current_Price': safe_fmt_currency,
+                    'Change%': safe_fmt_pct,
+                    'Trigger_Entry': safe_fmt_currency,
+                    'Stop_Loss': safe_fmt_currency,
+                    'Target_1': safe_fmt_currency,
+                    'Target_2': safe_fmt_currency
                 }, na_rep='—')
                 
             st.dataframe(styled_tc, use_container_width=True, height=380)
@@ -1005,13 +1090,13 @@ with tab_trade_chart:
                     <hr style="margin: 8px 0; border-color: #334155;">
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px;">
                         <div>
-                            <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Live Spot Price:</b> ₹{matched_tc['Current_Price']:.2f} ({matched_tc['Change%']:+.2f}%)</p>
-                            <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Trigger Entry:</b> ₹{matched_tc['Trigger_Entry']:.2f}</p>
-                            <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Invalidation SL:</b> ₹{matched_tc['Stop_Loss']:.2f}</p>
+                            <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Live Spot Price:</b> {safe_fmt_currency(matched_tc.get('Current_Price'))} ({safe_fmt_pct(matched_tc.get('Change%'))})</p>
+                            <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Trigger Entry:</b> {safe_fmt_currency(matched_tc.get('Trigger_Entry'))}</p>
+                            <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Invalidation SL:</b> {safe_fmt_currency(matched_tc.get('Stop_Loss'))}</p>
                         </div>
                         <div>
-                            <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> ₹{matched_tc['Target_1']:.2f}</p>
-                            <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Target 2 (Runner):</b> ₹{matched_tc['Target_2']:.2f}</p>
+                            <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> {safe_fmt_currency(matched_tc.get('Target_1'))}</p>
+                            <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Target 2 (Runner):</b> {safe_fmt_currency(matched_tc.get('Target_2'))}</p>
                             <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Risk:Reward:</b> {matched_tc['RR_Ratio']}</p>
                         </div>
                         <div>
@@ -1154,12 +1239,12 @@ with tab_patterns:
                 .map(lambda v: 'color: #22C55E; font-weight: bold;' if 'BUY' in str(v) else ('color: #EF4444; font-weight: bold;' if 'SELL' in str(v) else ''), subset=['Direction'] if 'Direction' in available_p else []) \
                 .map(lambda v: 'color: #FBBF24; font-weight: bold;' if 'JUST NOW' in str(v) else 'color: #38BDF8;', subset=['Status'] if 'Status' in available_p else []) \
                 .format({
-                    'Current_Price': '₹{:.2f}',
-                    'Change%': '{:+.2f}%',
-                    'Trigger_Entry': '₹{:.2f}',
-                    'Stop_Loss': '₹{:.2f}',
-                    'Target_1': '₹{:.2f}',
-                    'Target_2': '₹{:.2f}'
+                    'Current_Price': safe_fmt_currency,
+                    'Change%': safe_fmt_pct,
+                    'Trigger_Entry': safe_fmt_currency,
+                    'Stop_Loss': safe_fmt_currency,
+                    'Target_1': safe_fmt_currency,
+                    'Target_2': safe_fmt_currency
                 }, na_rep='—')
                 
             st.dataframe(styled_p, use_container_width=True, height=380)
@@ -1187,13 +1272,13 @@ with tab_patterns:
                 <hr style="margin: 8px 0; border-color: #334155;">
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px;">
                     <div>
-                        <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Live Spot Price:</b> ₹{matched_pattern['Current_Price']:.2f} ({matched_pattern['Change%']:+.2f}%)</p>
-                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Breakout Entry:</b> ₹{matched_pattern['Trigger_Entry']:.2f}</p>
-                        <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Stop Loss:</b> ₹{matched_pattern['Stop_Loss']:.2f}</p>
+                        <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Live Spot Price:</b> {safe_fmt_currency(matched_pattern.get('Current_Price'))} ({safe_fmt_pct(matched_pattern.get('Change%'))})</p>
+                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Breakout Entry:</b> {safe_fmt_currency(matched_pattern.get('Trigger_Entry'))}</p>
+                        <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Stop Loss:</b> {safe_fmt_currency(matched_pattern.get('Stop_Loss'))}</p>
                     </div>
                     <div>
-                        <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> ₹{matched_pattern['Target_1']:.2f}</p>
-                        <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Target 2 (Runner):</b> ₹{matched_pattern['Target_2']:.2f}</p>
+                        <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> {safe_fmt_currency(matched_pattern.get('Target_1'))}</p>
+                        <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Target 2 (Runner):</b> {safe_fmt_currency(matched_pattern.get('Target_2'))}</p>
                         <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Risk:Reward:</b> {matched_pattern['RR_Ratio']}</p>
                     </div>
                     <div>
@@ -1266,13 +1351,13 @@ with tab_trades:
                 .map(style_action, subset=['Action'] if 'Action' in display_trades.columns else []) \
                 .map(style_score, subset=['Score'] if 'Score' in display_trades.columns else []) \
                 .format({
-                    'Close': '₹{:.2f}',
-                    'Entry': '₹{:.2f}',
-                    'SL': '₹{:.2f}',
-                    'T1': '₹{:.2f}',
-                    'T2': '₹{:.2f}',
-                    'Risk': '₹{:.2f}',
-                    'Score': '{:+d}'
+                    'Close': safe_fmt_currency,
+                    'Entry': safe_fmt_currency,
+                    'SL': safe_fmt_currency,
+                    'T1': safe_fmt_currency,
+                    'T2': safe_fmt_currency,
+                    'Risk': safe_fmt_currency,
+                    'Score': safe_fmt_score
                 }, na_rep='—')
             
             st.dataframe(styled_trades, use_container_width=True, height=450)
@@ -1333,8 +1418,8 @@ with tab_ew:
             .map(lambda v: 'color: #FBBF24; font-weight: bold;', subset=['Conviction'] if 'Conviction' in available_ew else []) \
             .map(lambda v: 'color: #38BDF8; font-weight: bold;', subset=['Option_Action'] if 'Option_Action' in available_ew else []) \
             .format({
-                'Target_1': '₹{:.2f}',
-                'Target_2': '₹{:.2f}'
+                'Target_1': safe_fmt_currency,
+                'Target_2': safe_fmt_currency
             }, na_rep='—')
             
         st.dataframe(styled_ew, use_container_width=True, height=380)
@@ -1426,9 +1511,9 @@ with tab_ew:
                     </div>
                     <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 8px; border: 1px solid #10B981;">
                         <h4 style="color:#10B981; margin:0 0 4px 0;">💎 Cash Equity Buying Strategy (Spot / Delivery)</h4>
-                        <p style="color:#F8FAFC; margin:2px 0; font-size:0.9rem;"><b>Entry:</b> ₹{chart_setup.get('current_price', 0.0):.2f} | <b>Invalidation SL:</b> <span style="color:#EF4444;">₹{chart_setup.get('invalidation_price', 0.0):.2f}</span></p>
-                        <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1 (1.618 Fib):</b> ₹{chart_setup.get('target_1', 0.0):.2f}</p>
-                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Target 2 (2.0 Fib):</b> ₹{chart_setup.get('target_2', 0.0):.2f}</p>
+                        <p style="color:#F8FAFC; margin:2px 0; font-size:0.9rem;"><b>Entry:</b> {safe_fmt_currency(chart_setup.get('current_price'))} | <b>Invalidation SL:</b> <span style="color:#EF4444;">{safe_fmt_currency(chart_setup.get('invalidation_price'))}</span></p>
+                        <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1 (1.618 Fib):</b> {safe_fmt_currency(chart_setup.get('target_1'))}</p>
+                        <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Target 2 (2.0 Fib):</b> {safe_fmt_currency(chart_setup.get('target_2'))}</p>
                         <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Cash Risk-Reward:</b> {chart_setup.get('rr_ratio', '1:2.5')}</p>
                     </div>
                 </div>
@@ -1482,15 +1567,15 @@ with tab_bull:
                 .map(style_action, subset=['Action'] if 'Action' in display_df.columns else []) \
                 .map(style_change, subset=['Chg%'] if 'Chg%' in display_df.columns else []) \
                 .format({
-                    'Close': '₹{:.2f}',
-                    'Chg%': '{:+.2f}%',
-                    'Entry': '₹{:.2f}',
-                    'SL': '₹{:.2f}',
-                    'T1': '₹{:.2f}',
-                    'T2': '₹{:.2f}',
-                    'RSI': '{:.1f}',
-                    'ADX': '{:.1f}',
-                    'Score': '{:+d}',
+                    'Close': safe_fmt_currency,
+                    'Chg%': safe_fmt_pct,
+                    'Entry': safe_fmt_currency,
+                    'SL': safe_fmt_currency,
+                    'T1': safe_fmt_currency,
+                    'T2': safe_fmt_currency,
+                    'RSI': safe_fmt_num1,
+                    'ADX': safe_fmt_num1,
+                    'Score': safe_fmt_score,
                 }, na_rep='—')
             
             st.dataframe(styled, use_container_width=True, height=500)
@@ -1534,15 +1619,15 @@ with tab_bear:
                 .map(style_action, subset=['Action'] if 'Action' in display_df.columns else []) \
                 .map(style_change, subset=['Chg%'] if 'Chg%' in display_df.columns else []) \
                 .format({
-                    'Close': '₹{:.2f}',
-                    'Chg%': '{:+.2f}%',
-                    'Entry': '₹{:.2f}',
-                    'SL': '₹{:.2f}',
-                    'T1': '₹{:.2f}',
-                    'T2': '₹{:.2f}',
-                    'RSI': '{:.1f}',
-                    'ADX': '{:.1f}',
-                    'Score': '{:+d}',
+                    'Close': safe_fmt_currency,
+                    'Chg%': safe_fmt_pct,
+                    'Entry': safe_fmt_currency,
+                    'SL': safe_fmt_currency,
+                    'T1': safe_fmt_currency,
+                    'T2': safe_fmt_currency,
+                    'RSI': safe_fmt_num1,
+                    'ADX': safe_fmt_num1,
+                    'Score': safe_fmt_score,
                 }, na_rep='—')
             
             st.dataframe(styled, use_container_width=True, height=500)
@@ -1582,15 +1667,15 @@ with tab_all:
             .map(style_action, subset=['Action'] if 'Action' in display_df.columns else []) \
             .map(style_change, subset=['Chg%'] if 'Chg%' in display_df.columns else []) \
             .format({
-                'Close': '₹{:.2f}',
-                'Chg%': '{:+.2f}%',
-                'Entry': '₹{:.2f}',
-                'SL': '₹{:.2f}',
-                'T1': '₹{:.2f}',
-                'T2': '₹{:.2f}',
-                'RSI': '{:.1f}',
-                'ADX': '{:.1f}',
-                'Score': '{:+d}',
+                'Close': safe_fmt_currency,
+                'Chg%': safe_fmt_pct,
+                'Entry': safe_fmt_currency,
+                'SL': safe_fmt_currency,
+                'T1': safe_fmt_currency,
+                'T2': safe_fmt_currency,
+                'RSI': safe_fmt_num1,
+                'ADX': safe_fmt_num1,
+                'Score': safe_fmt_score,
             }, na_rep='—')
         
         st.dataframe(styled, use_container_width=True, height=600)
