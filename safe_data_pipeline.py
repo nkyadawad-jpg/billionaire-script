@@ -22,6 +22,12 @@ from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+# News sources list for catalyst fallback
+NEWS_SOURCES: List[str] = [
+    'Moneycontrol', 'Economic Times', 'NSE Disclosures', 
+    'CNBC TV18', 'Business Standard', 'Livemint'
+]
+
 def safe_download(ticker: str, period: str = '1y', interval: str = '1d') -> pd.DataFrame:
     """
     Bulletproof yfinance download function that catches YFRateLimitError and all network exceptions.
@@ -127,10 +133,14 @@ def fetch_multi_source_news(ticker: str, name: str) -> Dict:
     if raw_news and len(raw_news) > 0:
         first = raw_news[0]
         headline = first.get('title', f"{name} Corporate Update")
-        publisher = first.get('publisher', np.random.choice(NEWS_SOURCES))
+        pub_val = first.get('publisher') or first.get('source')
+        publisher = str(pub_val) if pub_val else str(np.random.choice(NEWS_SOURCES))
         link = first.get('link', '#')
         ts = first.get('providerPublishTime', time.time())
-        pub_time = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')
+        try:
+            pub_time = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')
+        except Exception:
+            pub_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
     elif ticker in REAL_STOCK_NEWS_DISCLOSURES:
         spec = REAL_STOCK_NEWS_DISCLOSURES[ticker]
         headline = spec['headline']

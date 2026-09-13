@@ -6,6 +6,8 @@ F&O Analytics, NIFTY 500 Universe, Classical Price Action Chart Patterns & PDF E
 
 import streamlit as st
 import pandas as pd
+import numpy as np
+import math
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import time

@@ -638,9 +638,8 @@ def scan_trade_chart_for_ticker(ticker: str, timeframe: str = '1-Hour') -> Optio
         res = detect_trade_chart_pattern(df, ticker, name, rt_price=rt_price, prev_close=prev_close, chg_pct=chg_pct, timeframe=timeframe)
         if res:
             consensus = calculate_unified_consensus(df, ticker, pattern_setup=res, timeframe=timeframe)
-            if not consensus['is_aligned']:
-                return None
             res['Conviction'] = f"{consensus['conviction_score']}% ({consensus['master_direction']} Harmonized)"
+            res['Consensus_Action'] = consensus['action']
         return res
     except Exception as e:
         logger.debug(f"Error scanning Trade Chart pattern for {ticker}: {e}")
