@@ -1087,24 +1087,27 @@ with tab_trade_chart:
                 <div class="pattern-card">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:1.2rem; font-weight:800; color:#F8FAFC;">📈 {matched_tc['Pattern']} — {matched_tc['Ticker']} ({matched_tc['Name']})</span>
-                        <span style="font-size:1.0rem; font-weight:700; color:#FDE047;">{matched_tc['Status']}</span>
+                        <span style="font-size:1.0rem; font-weight:700; color:#FDE047;">{matched_tc.get('Trade_Status', matched_tc.get('Status'))}</span>
                     </div>
                     <hr style="margin: 8px 0; border-color: #334155;">
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px;">
                         <div>
                             <p style="color:#CBD5E1; margin:2px 0; font-size:0.85rem;"><b>Live Spot Price:</b> {safe_fmt_currency(matched_tc.get('Current_Price'))} ({safe_fmt_pct(matched_tc.get('Change%'))})</p>
                             <p style="color:#38BDF8; margin:2px 0; font-size:0.85rem;"><b>Trigger Entry:</b> {safe_fmt_currency(matched_tc.get('Trigger_Entry'))}</p>
-                            <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Invalidation SL:</b> {safe_fmt_currency(matched_tc.get('Stop_Loss'))}</p>
+                            <p style="color:#60A5FA; margin:2px 0; font-size:0.85rem;"><b>Entry Zone:</b> {matched_tc.get('Entry_Zone', '—')}</p>
+                            <p style="color:#EF4444; margin:2px 0; font-size:0.85rem;"><b>Invalidation SL:</b> {safe_fmt_currency(matched_tc.get('Stop_Loss'))} ({matched_tc.get('Risk_Per_Share', '')})</p>
                         </div>
                         <div>
                             <p style="color:#22C55E; margin:2px 0; font-size:0.85rem;"><b>Target 1:</b> {safe_fmt_currency(matched_tc.get('Target_1'))}</p>
                             <p style="color:#10B981; margin:2px 0; font-size:0.85rem;"><b>Target 2 (Runner):</b> {safe_fmt_currency(matched_tc.get('Target_2'))}</p>
+                            <p style="color:#34D399; margin:2px 0; font-size:0.85rem;"><b>Target 3 (Extended):</b> {safe_fmt_currency(matched_tc.get('Target_3'))}</p>
                             <p style="color:#FDE047; margin:2px 0; font-size:0.85rem;"><b>Risk:Reward:</b> {matched_tc['RR_Ratio']}</p>
                         </div>
                         <div>
                             <p style="color:#A5B4FC; margin:2px 0; font-size:0.85rem;"><b>Target Reach Timing:</b> {matched_tc['Time_Cycle']}</p>
                             <p style="color:#F472B6; margin:2px 0; font-size:0.85rem;"><b>Wall Street Option:</b> {matched_tc['Option_Strike']}</p>
-                            <p style="color:#94A3B8; margin:2px 0; font-size:0.85rem;"><b>Conviction:</b> {matched_tc['Conviction']}</p>
+                            <p style="color:#C084FC; margin:2px 0; font-size:0.85rem;"><b>BOS Structure:</b> {matched_tc.get('BOS', 'NEUTRAL')}</p>
+                            <p style="color:#94A3B8; margin:2px 0; font-size:0.85rem;"><b>Signal Time:</b> {matched_tc.get('Signal_Timestamp', 'Live')}</p>
                         </div>
                     </div>
                     <p style="color:#E2E8F0; font-size:0.85rem; margin:8px 0 0 0;">💡 <b>Pattern Rationale:</b> {matched_tc['Rationale']}</p>
